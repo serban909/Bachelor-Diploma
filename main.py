@@ -1,0 +1,117 @@
+#!/usr/bin/env pybricks-micropython
+from pybricks.hubs import EV3Brick
+from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor, InfraredSensor, UltrasonicSensor, GyroSensor)
+from pybricks.parameters import Port, Stop, Direction, Button, Color
+from pybricks.tools import wait, StopWatch, DataLog
+from pybricks.robotics import DriveBase
+from pybricks.media.ev3dev import SoundFile, ImageFile
+from HardwareAdapter import HardwareAdapter
+from BehaviorFactory import BehaviorFactory
+
+
+# This program requires LEGO EV3 MicroPython v2.0 or higher.
+# Click "Open user guide" on the EV3 extension tab for more information.
+
+def main():
+    hw=HardwareAdapter()
+    ev3=hw.ev3
+    
+    ev3.screen.clear()
+    ev3.screen.print("Pick:")
+    ev3.screen.print("Left = Lane")
+    ev3.screen.print("Right = Maze")
+    ev3.screen.print("Center = Quit")
+    
+    while True:
+        buttons=ev3.buttons.pressed()
+        if buttons:
+            button=buttons[0]
+            if button==Button.LEFT:
+                behavior_name="lane"
+                break
+            elif button==Button.RIGHT:
+                behavior_name="maze"
+                break
+            elif button==Button.CENTER:
+                ev3.screen.clear()
+                ev3.screen.print("Exit")
+                return
+        wait(50)
+        
+    if behavior_name=="lane":
+        # LaneKeeping with PID regulator (gentle tuning for smooth line following)
+        behavior=BehaviorFactory.create("lane", 
+                                       target_reflect=40, 
+                                       base_speed=140, 
+                                       kp=1.2, 
+                                       threshold=28,
+                                       regulator_type="PID",
+                                       regulator_kp=1.2,
+                                       regulator_ki=0.3,
+                                       regulator_kd=0.05)
+    elif behavior_name=="maze":
+        # MazeSolver with PID regulator (aggressive tuning for quick turns)
+        behavior=BehaviorFactory.create("maze", 
+                                       wall_distance_mm=60, 
+                                       forward_distance_mm=150, 
+                                       probe_turn_deg=90,
+                                       regulator_type="PID",
+                                       regulator_kp=2.0,
+                                       regulator_ki=0.4,
+                                       regulator_kd=0.1)
+        
+    behavior.on_start(hw)
+    
+    stopwatch=StopWatch()
+    stopwatch.reset()
+    last=stopwatch.time()/1000.0
+    
+    try:
+        while True:
+            now= stopwatch.time()/1000.0
+            dt=now-last
+            if dt<=0:
+                dt=0.01
+            last=now
+            behavior.step(hw, dt)
+            wait(20)
+    except KeyboardInterrupt:
+        behavior.on_stop(hw)
+        hw.stop()
+        
+if __name__=="__main__":
+    main()
+
+
+#ev3 = EV3Brick()
+#test_motor=Motor(Port.B)
+
+#left_motor = Motor(Port.A)
+#right_motor = Motor(Port.C)
+
+#ultrasonic_sensor = UltrasonicSensor(Port.S4)
+
+#robot = DriveBase(Motor(Port.A), Motor(Port.C), wheel_diameter=56, axle_track=122)
+
+#while True:
+ #   distance = ultrasonic_sensor.distance()
+  #  print("Distance:", distance, " mm")
+   # if distance < 300:
+    #    robot.stop()
+     #   robot.turn(90)
+    #else:
+    #    robot.drive(9, 0)
+    #wait(10)
+
+#drive_base.stop()
+
+#ev3.speaker.beep()
+
+#test_motor.run_target(500, 90)
+
+#left_motor.run_target(500, 500)
+#right_motor.run_target(500, 500)
+
+
+# Write your program here.
+#ev3.speaker.beep(1000, 500)
