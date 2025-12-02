@@ -12,7 +12,7 @@ from PIFuzzyRegulator import PIFuzzyRegulator
 
 class MazeSolver(Behavior):
     def __init__(self, wall_distance_mm=180, forward_distance_mm=150, probe_turn_deg=90, probe_pause_ms=300,
-                 regulator_type="PID", regulator_kp=10.0, regulator_ki=0.01, regulator_kd=0.02):
+                 regulator_type="PID", regulator_kp=2.0, regulator_ki=0.4, regulator_kd=0.1):
         self.wall_distance = wall_distance_mm
         self.forward_distance = forward_distance_mm
         self.probe_turn = probe_turn_deg
