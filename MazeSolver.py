@@ -11,16 +11,28 @@ from PIDRegulator import PIDRegulator
 from PIFuzzyRegulator import PIFuzzyRegulator
 
 class MazeSolver(Behavior):
-    def __init__(self, wall_distance_mm=180, forward_distance_mm=150, probe_turn_deg=90, probe_pause_ms=300,
-                 regulator_type="PID", regulator_kp=2.0, regulator_ki=0.4, regulator_kd=0.1):
-        self.wall_distance = wall_distance_mm
-        self.forward_distance = forward_distance_mm
-        self.probe_turn = probe_turn_deg
-        self.probe_pause = probe_pause_ms
-        self.state = 'DECIDING'
+    def __init__(self, target_wall_distance=100, base_speed=120, min_forward_distance=80,
+                 regulator_type="PID", regulator_kp=3.0, regulator_ki=0.5, regulator_kd=0.2):
+        """
+        Continuous wall-following maze solver using left-hand rule.
+        
+        Args:
+            target_wall_distance: Desired distance from left wall (mm)
+            base_speed: Base forward speed (mm/s)
+            min_forward_distance: Minimum distance before obstacle avoidance (mm)
+            regulator_type: "PID" or "PIFuzzy"
+            regulator_kp: Proportional gain for wall following
+            regulator_ki: Integral gain for wall following
+            regulator_kd: Derivative gain for wall following
+        """
+        self.target_wall_distance = target_wall_distance
+        self.base_speed = base_speed
+        self.min_forward_distance = min_forward_distance
         
         # Use logger for tracking
         self.logger = PathLogger()
+        self.step_count = 0
+        self.log_interval = 100  # Log every 100 steps
         
         # Regulator parameters
         self.regulator_type = regulator_type
@@ -29,132 +41,180 @@ class MazeSolver(Behavior):
         self.regulator_kd = regulator_kd
         self.regulator = None
         
+        # State for continuous operation
+        self.total_distance_traveled = 0
+        
     def on_start(self, hardware_adapter):
         hardware_adapter.ev3.speaker.beep()
-        print("\n=== Maze Solver Started ===")
-        print("Wall distance threshold:", self.wall_distance, "mm")
-        print("Forward step distance:", self.forward_distance, "mm")
+        print("\n=== Continuous Wall-Following Maze Solver ===")
+        print("Target wall distance:", self.target_wall_distance, "mm")
+        print("Base speed:", self.base_speed, "mm/s")
+        print("Minimum forward distance:", self.min_forward_distance, "mm")
         
-        # Initialize regulator
+        # Initialize regulator for wall following
         if self.regulator_type == "PID":
             self.regulator = PIDRegulator(kp=self.regulator_kp, ki=self.regulator_ki, 
-                                         kd=self.regulator_kd, min_output=-200, max_output=200)
+                                         kd=self.regulator_kd, min_output=-300, max_output=300)
             print("Regulator: PID (Kp=", self.regulator_kp, ", Ki=", self.regulator_ki, ", Kd=", self.regulator_kd, ")")
         elif self.regulator_type == "PIFuzzy":
             self.regulator = PIFuzzyRegulator(kp_base=self.regulator_kp, ki_base=self.regulator_ki, 
-                                             min_output=-200, max_output=200)
+                                             min_output=-300, max_output=300)
             print("Regulator: PI-Fuzzy (Kp_base=", self.regulator_kp, ", Ki_base=", self.regulator_ki, ")")
         else:
             self.regulator = None
-            print("Regulator: None (using direct motor control)")
+            print("Regulator: None (not recommended for continuous wall following)")
         
+        print("Mode: Continuous left-hand wall following")
         print("="*30 + "\n")
         
-    def _is_blocked(self, hardware_adapter):
-        distance = hardware_adapter.distance_mm()
-        blocked = distance < self.wall_distance
-        interpretation = "BLOCKED" if blocked else "FREE"
-        self.logger.log_sensor_reading("ultrasonic", distance, interpretation)
-        return blocked
-    
+        self.logger.log_decision("START", "Continuous wall-following mode initialized")
+        
     def step(self, hardware_adapter, dt):
-        if self.state == 'DECIDING':
-            summary = self.logger.get_summary()
-            print("\n--- Decision", summary['total_decisions'] + 1, "---")
+        """
+        Continuous wall-following control loop.
+        Uses PID/PI-Fuzzy regulator to maintain constant distance from left wall.
+        """
+        self.step_count += 1
+        
+        # Get sensor readings
+        forward_distance = hardware_adapter.distance_mm()
+        
+        # For wall following, we use the ultrasonic sensor
+        # In a real setup, you might have a side-facing sensor
+        # Here we assume the ultrasonic can detect the left wall
+        left_wall_distance = forward_distance  # Simplified - use actual left sensor if available
+        
+        # Log sensor data periodically
+        if self.step_count % self.log_interval == 0:
+            self.logger.log_sensor_reading("left_wall", left_wall_distance, "")
+            self.logger.log_sensor_reading("forward", forward_distance, "")
+            print("Step", self.step_count, "| Wall:", left_wall_distance, "mm | Forward:", forward_distance, "mm")
+        
+        # Check if obstacle ahead (emergency stop/turn)
+        if forward_distance < self.min_forward_distance:
+            # Obstacle detected ahead - perform left-hand rule turn
+            self._handle_obstacle(hardware_adapter, forward_distance)
+            return
+        
+        # Continuous wall following using regulator
+        if self.regulator is not None:
+            # Calculate error: positive = too far from wall, negative = too close
+            error = self.target_wall_distance - left_wall_distance
             
-            # ALWAYS CHECK FORWARD FIRST
-            print("Checking FORWARD...")
-            self.logger.log_decision("Check FORWARD", "Priority check")
-            forward_blocked = self._is_blocked(hardware_adapter)
+            # Compute steering correction using PID/PI-Fuzzy
+            steering = self.regulator.compute(self.target_wall_distance, left_wall_distance, dt)
             
-            if not forward_blocked:
-                # Forward is clear - just go straight! (most common case)
-                self.logger.log_decision("FORWARD clear", "Going straight")
-                hardware_adapter.straight(self.forward_distance)
-                self.logger.log_move(self.forward_distance)
-                self.state = 'DECIDING'
-                return
+            # Apply control: drive forward while adjusting steering
+            # Positive steering = turn right (away from wall)
+            # Negative steering = turn left (toward wall)
+            hardware_adapter.drive_turn_rate(self.base_speed, steering)
             
-            # Forward is blocked - now apply left-hand rule
-            self.logger.log_decision("FORWARD blocked", "Applying left-hand rule")
+            # Track distance (approximate)
+            distance_this_step = self.base_speed * dt
+            self.total_distance_traveled += distance_this_step
             
-            # Check left (turn left, check, turn back if blocked)
-            print("Checking LEFT...")
-            self.logger.log_decision("Check LEFT", "Turning -90 degrees")
-            hardware_adapter.turn_angle(-self.probe_turn)
-            self.logger.log_turn(-self.probe_turn, "Turn left to check")
-            wait(self.probe_pause)
-            
-            left_blocked = self._is_blocked(hardware_adapter)
-            
-            if not left_blocked:
-                # Left is free, take it
-                self.logger.log_decision("Take LEFT path", "Path is free")
-                hardware_adapter.straight(self.forward_distance)
-                self.logger.log_move(self.forward_distance)
-                self.state = 'DECIDING'
-                return
-            else:
-                # Left is blocked, turn back to original direction
-                self.logger.log_decision("LEFT blocked", "Returning to center")
-                hardware_adapter.turn_angle(self.probe_turn)
-                self.logger.log_turn(self.probe_turn, "Turn right back to center")
-                wait(self.probe_pause)
-            
-            # Check right (turn right, check, turn back if blocked)
-            print("Checking RIGHT...")
-            self.logger.log_decision("Check RIGHT", "Turning +90 degrees")
-            hardware_adapter.turn_angle(self.probe_turn)
-            self.logger.log_turn(self.probe_turn, "Turn right to check")
-            wait(self.probe_pause)
-            
-            right_blocked = self._is_blocked(hardware_adapter)
-            
-            if not right_blocked:
-                # Right is free, take it
-                self.logger.log_decision("Take RIGHT path", "Path is free")
-                hardware_adapter.straight(self.forward_distance)
-                self.logger.log_move(self.forward_distance)
-                self.state = 'DECIDING'
-                return
-            else:
-                # All paths blocked - turn around 180
-                self.logger.log_decision("ALL paths blocked", "Dead end - turning around")
-                hardware_adapter.turn_angle(-self.probe_turn)
-                self.logger.log_turn(-self.probe_turn, "Turn left back to center")
-                wait(self.probe_pause)
-                hardware_adapter.turn_angle(180)
-                self.logger.log_turn(180, "Turn around 180 degrees")
-                wait(self.probe_pause)
-                # Don't move forward here, let next iteration decide
-                self.state = 'DECIDING'
-                return
+        else:
+            # Fallback: simple proportional control
+            error = self.target_wall_distance - left_wall_distance
+            steering = error * 2.0  # Simple proportional gain
+            if steering > 200:
+                steering = 200
+            elif steering < -200:
+                steering = -200
+            hardware_adapter.drive_turn_rate(self.base_speed, steering)
+    
+    def _handle_obstacle(self, hardware_adapter, forward_distance):
+        """
+        Handle obstacle detection using left-hand rule.
+        This is called when forward path is blocked.
+        """
+        hardware_adapter.stop()
+        self.logger.log_decision("OBSTACLE AHEAD", "Distance: " + str(forward_distance) + "mm")
+        print("\n*** OBSTACLE DETECTED - Applying left-hand rule ***")
+        
+        # Try turning left first (left-hand rule)
+        print("Attempting LEFT turn...")
+        hardware_adapter.turn_angle(-90)
+        self.logger.log_turn(-90, "Left-hand rule: turn left")
+        wait(300)
+        
+        # Check if path is clear after turning
+        new_forward_distance = hardware_adapter.distance_mm()
+        self.logger.log_sensor_reading("forward_after_left_turn", new_forward_distance, "")
+        
+        if new_forward_distance >= self.min_forward_distance:
+            # Path is clear, continue
+            self.logger.log_decision("LEFT TURN SUCCESS", "Path clear after left turn")
+            print("Left turn successful, continuing...")
+            if self.regulator is not None:
+                self.regulator.reset()  # Reset PID state after discrete turn
+            return
+        
+        # Left didn't work, try going back and turning right
+        print("Left blocked, trying RIGHT...")
+        hardware_adapter.turn_angle(180)  # Turn 180 from left = 90 right from original
+        self.logger.log_turn(180, "Left blocked, turning right instead")
+        wait(300)
+        
+        new_forward_distance = hardware_adapter.distance_mm()
+        self.logger.log_sensor_reading("forward_after_right_turn", new_forward_distance, "")
+        
+        if new_forward_distance >= self.min_forward_distance:
+            self.logger.log_decision("RIGHT TURN SUCCESS", "Path clear after right turn")
+            print("Right turn successful, continuing...")
+            if self.regulator is not None:
+                self.regulator.reset()
+            return
+        
+        # Both left and right blocked - turn around 180
+        print("Dead end detected, turning around...")
+        hardware_adapter.turn_angle(180)
+        self.logger.log_turn(180, "Dead end - turning around")
+        self.logger.log_decision("DEAD END", "Turned around 180 degrees")
+        wait(300)
+        
+        if self.regulator is not None:
+            self.regulator.reset()
         
     def on_stop(self, hardware_adapter):
         hardware_adapter.stop()
         print("\n" + "="*40)
-        print("=== Maze Solver Stopped ===")
+        print("=== Continuous Wall-Following Maze Solver Stopped ===")
         summary = self.logger.get_summary()
-        print("Total distance traveled:", summary['total_distance'], "mm")
+        print("Total steps executed:", self.step_count)
+        print("Approximate distance traveled:", int(self.total_distance_traveled), "mm")
         print("Total decisions made:", summary['total_decisions'])
+        print("Total actions logged:", summary['total_actions'])
+        
+        # Show regulator final state
+        if self.regulator is not None:
+            state = self.regulator.get_state()
+            print("\nRegulator final state:")
+            if self.regulator_type == "PID":
+                print("  Kp:", state['kp'], "Ki:", state['ki'], "Kd:", state['kd'])
+                print("  Integral term:", round(state['integral'], 2))
+                print("  Last error:", round(state['previous_error'], 2))
+            elif self.regulator_type == "PIFuzzy":
+                print("  Kp_base:", state['kp_base'], "Ki_base:", state['ki_base'])
+                print("  Integral term:", round(state['integral'], 2))
+        
         print("="*40 + "\n")
         
-        # Print complete log to console
-        print("\n=== COMPLETE LOG ===")
+        # Print summary of major events
+        print("\n=== MAJOR EVENTS LOG ===")
         for entry in self.logger.get_log_entries():
             if entry['type'] == 'decision':
-                msg = str(entry['number']) + ". DECISION: " + entry['decision']
+                msg = str(entry['number']) + ". " + entry['decision']
                 if entry['detail']:
                     msg += " (" + entry['detail'] + ")"
                 print(msg)
             elif entry['type'] == 'turn':
-                print("  TURN: " + str(entry['angle']) + " degrees - " + entry['description'])
-            elif entry['type'] == 'move':
-                print("  MOVE: " + str(entry['distance']) + "mm")
+                print("  -> TURN: " + str(entry['angle']) + " degrees - " + entry['description'])
         
         # Export data to files
         print("\n" + "="*40)
         print("Exporting data to files...")
         DataExporter.export_log_to_file(self.logger, "maze_run_log.txt")
-        DataExporter.export_training_data(self.logger, None, "maze_training.csv")
+        DataExporter.export_training_data(self.logger, "maze_training.csv")
+        print("Data exported successfully!")
         print("="*40)

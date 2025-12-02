@@ -50,15 +50,15 @@ def main():
                                        regulator_ki=0.3,
                                        regulator_kd=0.05)
     elif behavior_name=="maze":
-        # MazeSolver with PID regulator (aggressive tuning for quick turns)
+        # MazeSolver with continuous wall-following PID regulator
         behavior=BehaviorFactory.create("maze", 
-                                       wall_distance_mm=60, 
-                                       forward_distance_mm=150, 
-                                       probe_turn_deg=90,
+                                       target_wall_distance=100,    # Keep 100mm from left wall
+                                       base_speed=120,               # Continuous forward speed
+                                       min_forward_distance=80,      # Stop if obstacle within 80mm
                                        regulator_type="PID",
-                                       regulator_kp=2.0,
-                                       regulator_ki=0.4,
-                                       regulator_kd=0.1)
+                                       regulator_kp=3.0,            # Aggressive for quick wall tracking
+                                       regulator_ki=0.5,            # Eliminate steady-state error
+                                       regulator_kd=0.2)            # Dampen oscillations
         
     behavior.on_start(hw)
     
