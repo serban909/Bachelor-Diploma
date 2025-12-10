@@ -38,8 +38,8 @@ class PIDRegulator(Regulator):
         self.max_output = max_output
         
         # Anti-windup: limit integral term
-        self.integral_max = 1000.0
-        self.integral_min = -1000.0
+        self.integral_max = 1.0
+        self.integral_min = -1.0
     
     def compute(self, setpoint, measured_value, dt):
         """

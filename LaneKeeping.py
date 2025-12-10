@@ -11,8 +11,8 @@ from PIDRegulator import PIDRegulator
 from PIFuzzyRegulator import PIFuzzyRegulator
 
 class LaneKeeping(Behavior):
-    def __init__(self, target_reflect=40, base_speed=150, kp=1.0, threshold=25, 
-                 regulator_type="PID", regulator_kp=1.2, regulator_ki=0.3, regulator_kd=0.05):
+    def __init__(self, target_reflect=40, base_speed=15, kp=1.0, threshold=25, 
+                 regulator_type="PID", regulator_kp=2.0, regulator_ki=0.1, regulator_kd=0.2):
         self.target = target_reflect
         self.base_speed = base_speed
         self.kp = kp

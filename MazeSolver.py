@@ -11,21 +11,24 @@ from PIDRegulator import PIDRegulator
 from PIFuzzyRegulator import PIFuzzyRegulator
 
 class MazeSolver(Behavior):
-    def __init__(self, target_wall_distance=100, base_speed=120, min_forward_distance=80,
-                 regulator_type="PID", regulator_kp=3.0, regulator_ki=0.5, regulator_kd=0.2):
+    def __init__(self, distance_threshold_low=35, distance_threshold_high=50, base_speed=30, min_forward_distance=30,
+                 regulator_type="PID", regulator_kp=2.0, regulator_ki=0.01, regulator_kd=0.02):
         """
-        Continuous wall-following maze solver using left-hand rule.
+        Continuous wall-following maze solver using threshold band approach.
         
         Args:
-            target_wall_distance: Desired distance from left wall (mm)
-            base_speed: Base forward speed (mm/s)
+            distance_threshold_low: Minimum acceptable distance from left wall (mm)
+            distance_threshold_high: Maximum acceptable distance from left wall (mm)
+            base_speed: Base forward speed (mm/s) - moderate for safety
             min_forward_distance: Minimum distance before obstacle avoidance (mm)
             regulator_type: "PID" or "PIFuzzy"
             regulator_kp: Proportional gain for wall following
             regulator_ki: Integral gain for wall following
             regulator_kd: Derivative gain for wall following
         """
-        self.target_wall_distance = target_wall_distance
+        self.distance_threshold_low = distance_threshold_low
+        self.distance_threshold_high = distance_threshold_high
+        self.target_wall_distance = (distance_threshold_low + distance_threshold_high) / 2.0  # Center of band
         self.base_speed = base_speed
         self.min_forward_distance = min_forward_distance
         
@@ -47,18 +50,19 @@ class MazeSolver(Behavior):
     def on_start(self, hardware_adapter):
         hardware_adapter.ev3.speaker.beep()
         print("\n=== Continuous Wall-Following Maze Solver ===")
-        print("Target wall distance:", self.target_wall_distance, "mm")
+        print("Wall distance band:", self.distance_threshold_low, "-", self.distance_threshold_high, "mm")
+        print("Target (center):", int(self.target_wall_distance), "mm")
         print("Base speed:", self.base_speed, "mm/s")
         print("Minimum forward distance:", self.min_forward_distance, "mm")
         
         # Initialize regulator for wall following
         if self.regulator_type == "PID":
             self.regulator = PIDRegulator(kp=self.regulator_kp, ki=self.regulator_ki, 
-                                         kd=self.regulator_kd, min_output=-300, max_output=300)
+                                         kd=self.regulator_kd, min_output=-100, max_output=100)
             print("Regulator: PID (Kp=", self.regulator_kp, ", Ki=", self.regulator_ki, ", Kd=", self.regulator_kd, ")")
         elif self.regulator_type == "PIFuzzy":
             self.regulator = PIFuzzyRegulator(kp_base=self.regulator_kp, ki_base=self.regulator_ki, 
-                                             min_output=-300, max_output=300)
+                                             min_output=-100, max_output=100)
             print("Regulator: PI-Fuzzy (Kp_base=", self.regulator_kp, ", Ki_base=", self.regulator_ki, ")")
         else:
             self.regulator = None
@@ -76,19 +80,15 @@ class MazeSolver(Behavior):
         """
         self.step_count += 1
         
-        # Get sensor readings
-        forward_distance = hardware_adapter.distance_mm()
-        
-        # For wall following, we use the ultrasonic sensor
-        # In a real setup, you might have a side-facing sensor
-        # Here we assume the ultrasonic can detect the left wall
-        left_wall_distance = forward_distance  # Simplified - use actual left sensor if available
+        # Get sensor readings from SEPARATE sensors
+        forward_distance = hardware_adapter.distance_mm()  # Forward-facing sensor (Port S4)
+        left_wall_distance = hardware_adapter.left_wall_distance_mm()  # Left-facing sensor (Port S1)
         
         # Log sensor data periodically
         if self.step_count % self.log_interval == 0:
             self.logger.log_sensor_reading("left_wall", left_wall_distance, "")
             self.logger.log_sensor_reading("forward", forward_distance, "")
-            print("Step", self.step_count, "| Wall:", left_wall_distance, "mm | Forward:", forward_distance, "mm")
+            print("Step", self.step_count, "| Left wall:", left_wall_distance, "mm | Forward:", forward_distance, "mm")
         
         # Check if obstacle ahead (emergency stop/turn)
         if forward_distance < self.min_forward_distance:
@@ -96,32 +96,47 @@ class MazeSolver(Behavior):
             self._handle_obstacle(hardware_adapter, forward_distance)
             return
         
-        # Continuous wall following using regulator
-        if self.regulator is not None:
-            # Calculate error: positive = too far from wall, negative = too close
-            error = self.target_wall_distance - left_wall_distance
-            
-            # Compute steering correction using PID/PI-Fuzzy
-            steering = self.regulator.compute(self.target_wall_distance, left_wall_distance, dt)
-            
-            # Apply control: drive forward while adjusting steering
-            # Positive steering = turn right (away from wall)
-            # Negative steering = turn left (toward wall)
-            hardware_adapter.drive_turn_rate(self.base_speed, steering)
-            
-            # Track distance (approximate)
-            distance_this_step = self.base_speed * dt
-            self.total_distance_traveled += distance_this_step
-            
+        # Threshold band wall following for better curve handling
+        steering = 0
+        
+        if left_wall_distance < self.distance_threshold_low:
+            # TOO CLOSE to wall - steer RIGHT (away from wall)
+            if self.regulator is not None:
+                # Use PID with virtual target at high threshold
+                steering = self.regulator.compute(self.distance_threshold_high, left_wall_distance, dt)
+            else:
+                # Simple proportional: closer = more right steering
+                error = left_wall_distance - self.distance_threshold_low
+                steering = -error * 3.0  # Negative error, so negative steering = right turn
+                
+        elif left_wall_distance > self.distance_threshold_high:
+            # TOO FAR from wall - steer LEFT (toward wall)
+            if self.regulator is not None:
+                # Use PID with virtual target at low threshold
+                steering = self.regulator.compute(self.distance_threshold_low, left_wall_distance, dt)
+            else:
+                # Simple proportional: farther = more left steering
+                error = left_wall_distance - self.distance_threshold_high
+                steering = -error * 3.0  # Positive error, negative steering = left turn
+                
         else:
-            # Fallback: simple proportional control
-            error = self.target_wall_distance - left_wall_distance
-            steering = error * 2.0  # Simple proportional gain
-            if steering > 200:
-                steering = 200
-            elif steering < -200:
-                steering = -200
-            hardware_adapter.drive_turn_rate(self.base_speed, steering)
+            # WITHIN BAND - go straight, no correction needed!
+            steering = 0
+            if self.regulator is not None:
+                self.regulator.reset()  # Reset PID state to prevent integral windup
+        
+        # Apply steering limits
+        if steering > 300:
+            steering = 300
+        elif steering < -300:
+            steering = -300
+        
+        # Drive forward with calculated steering
+        hardware_adapter.drive_turn_rate(self.base_speed, steering)
+        
+        # Track distance (approximate)
+        distance_this_step = self.base_speed * dt
+        self.total_distance_traveled += distance_this_step
     
     def _handle_obstacle(self, hardware_adapter, forward_distance):
         """

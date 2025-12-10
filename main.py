@@ -42,23 +42,24 @@ def main():
         # LaneKeeping with PID regulator (gentle tuning for smooth line following)
         behavior=BehaviorFactory.create("lane", 
                                        target_reflect=40, 
-                                       base_speed=140, 
+                                       base_speed=15, 
                                        kp=1.2, 
                                        threshold=28,
                                        regulator_type="PID",
-                                       regulator_kp=1.2,
-                                       regulator_ki=0.3,
-                                       regulator_kd=0.05)
+                                       regulator_kp=2.0,
+                                       regulator_ki=0.1,
+                                       regulator_kd=0.2)
     elif behavior_name=="maze":
-        # MazeSolver with continuous wall-following PID regulator
+        # MazeSolver with threshold band wall-following (better for curves)
         behavior=BehaviorFactory.create("maze", 
-                                       target_wall_distance=100,    # Keep 100mm from left wall
-                                       base_speed=120,               # Continuous forward speed
-                                       min_forward_distance=80,      # Stop if obstacle within 80mm
+                                       distance_threshold_low=35,   # Minimum acceptable distance from wall
+                                       distance_threshold_high=50,  # Maximum acceptable distance from wall
+                                       base_speed=30,               # Moderate speed for safety
+                                       min_forward_distance=30,     # Stop at 30mm from obstacle
                                        regulator_type="PID",
-                                       regulator_kp=3.0,            # Aggressive for quick wall tracking
-                                       regulator_ki=0.5,            # Eliminate steady-state error
-                                       regulator_kd=0.2)            # Dampen oscillations
+                                       regulator_kp=10.0,           # Aggressive for quick wall tracking
+                                       regulator_ki=0.01,           # Eliminate steady-state error
+                                       regulator_kd=0.02)           # Dampen oscillations
         
     behavior.on_start(hw)
     
@@ -71,7 +72,7 @@ def main():
             now= stopwatch.time()/1000.0
             dt=now-last
             if dt<=0:
-                dt=0.01
+                dt=0.1
             last=now
             behavior.step(hw, dt)
             wait(20)
