@@ -1,0 +1,64 @@
+Starting: brickrun --directory="/home/robot/Project_1" "/home/robot/Project_1/main.py"
+----------
+
+=== Continuous Wall-Following Maze Solver ===
+Wall distance band: 35 - 50 mm
+Target (center): 42 mm
+Base speed: 20 mm/s
+Minimum forward distance: 30 mm
+Regulator: PID (Kp= 10.0 , Ki= 0.01 , Kd= 0.02 )
+Mode: Continuous left-hand wall following
+==============================
+
+1. DECISION: START (Continuous wall-following mode initialized)
+  SENSOR [left_wall]: 103
+  SENSOR [forward]: 2550
+Step 100 | Left wall: 103 mm | Forward: 2550 mm
+  SENSOR [left_wall]: 496
+  SENSOR [forward]: 65
+Step 200 | Left wall: 496 mm | Forward: 65 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 2550
+Step 300 | Left wall: 40 mm | Forward: 2550 mm
+  SENSOR [left_wall]: 46
+  SENSOR [forward]: 464
+Step 400 | Left wall: 46 mm | Forward: 464 mm
+  SENSOR [left_wall]: 418
+  SENSOR [forward]: 40
+Step 500 | Left wall: 418 mm | Forward: 40 mm
+  SENSOR [left_wall]: 428
+  SENSOR [forward]: 65
+Step 600 | Left wall: 428 mm | Forward: 65 mm
+  SENSOR [left_wall]: 442
+  SENSOR [forward]: 229
+Step 700 | Left wall: 442 mm | Forward: 229 mm
+  SENSOR [left_wall]: 399
+  SENSOR [forward]: 78
+Step 800 | Left wall: 399 mm | Forward: 78 mm
+  SENSOR [left_wall]: 985
+  SENSOR [forward]: 290
+Step 900 | Left wall: 985 mm | Forward: 290 mm
+  SENSOR [left_wall]: 36
+  SENSOR [forward]: 321
+Step 1000 | Left wall: 36 mm | Forward: 321 mm
+  SENSOR [left_wall]: 49
+  SENSOR [forward]: 326
+Step 1100 | Left wall: 49 mm | Forward: 326 mm
+  SENSOR [left_wall]: 65
+  SENSOR [forward]: 1255
+Step 1200 | Left wall: 65 mm | Forward: 1255 mm
+  SENSOR [left_wall]: 464
+  SENSOR [forward]: 40
+Step 1300 | Left wall: 464 mm | Forward: 40 mm
+  SENSOR [left_wall]: 326
+  SENSOR [forward]: 40
+Step 1400 | Left wall: 326 mm | Forward: 40 mm
+  SENSOR [left_wall]: 74
+  SENSOR [forward]: 1225
+Step 1500 | Left wall: 74 mm | Forward: 1225 mm
+  SENSOR [left_wall]: 370
+  SENSOR [forward]: 38
+Step 1600 | Left wall: 370 mm | Forward: 38 mm
+Program ended by stop button
+----------
+Completed successfully.

@@ -96,6 +96,15 @@ class MazeSolver(Behavior):
             self._handle_obstacle(hardware_adapter, forward_distance)
             return
         
+        # LEFT-HAND RULE: Check if left wall disappeared (open passage)
+        # If no wall on left, turn left immediately!
+        # Use high threshold to avoid false positives from wall variations
+        if left_wall_distance > 500:  # Clear open space (was 200, too sensitive)
+            # Additional validation: ensure forward path is also clear
+            if forward_distance > 100:  # Don't turn into immediate obstacles
+                self._handle_open_left_passage(hardware_adapter, left_wall_distance)
+                return
+        
         # Threshold band wall following for better curve handling
         steering = 0
         
@@ -190,6 +199,36 @@ class MazeSolver(Behavior):
         
         if self.regulator is not None:
             self.regulator.reset()
+    
+    def _handle_open_left_passage(self, hardware_adapter, left_wall_distance):
+        """
+        Handle open left passage detection (LEFT-HAND RULE).
+        When no wall on left, always turn left to follow left-hand rule.
+        """
+        hardware_adapter.stop()
+        self.logger.log_decision("OPEN LEFT PASSAGE", "Distance: " + str(left_wall_distance) + "mm (no wall)")
+        print("\n*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***")
+        
+        # Turn left into the open passage
+        print("Turning LEFT into open passage...")
+        hardware_adapter.turn_angle(-90)
+        self.logger.log_turn(-90, "Open left passage - turn left")
+        wait(300)
+        
+        # Check if forward path is clear
+        forward_distance = hardware_adapter.distance_mm()
+        self.logger.log_sensor_reading("forward_after_left_passage", forward_distance, "")
+        
+        if forward_distance >= self.min_forward_distance:
+            self.logger.log_decision("LEFT PASSAGE SUCCESS", "Entered left passage")
+            print("Entered left passage successfully, continuing...")
+        else:
+            # Forward blocked after turning - this shouldn't happen often
+            self.logger.log_decision("LEFT PASSAGE BLOCKED", "Obstacle after turning left")
+            print("Warning: Obstacle detected after turning left")
+        
+        if self.regulator is not None:
+            self.regulator.reset()  # Reset PID state after discrete turn
         
     def on_stop(self, hardware_adapter):
         hardware_adapter.stop()

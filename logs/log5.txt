@@ -1,0 +1,190 @@
+Starting: brickrun --directory="/home/robot/Project_1" "/home/robot/Project_1/main.py"
+----------
+
+=== Continuous Wall-Following Maze Solver ===
+Wall distance band: 35 - 50 mm
+Target (center): 42 mm
+Base speed: 30 mm/s
+Minimum forward distance: 30 mm
+Regulator: PID (Kp= 10.0 , Ki= 0.01 , Kd= 0.02 )
+Mode: Continuous left-hand wall following
+==============================
+
+1. DECISION: START (Continuous wall-following mode initialized)
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 697
+Step 100 | Left wall: 40 mm | Forward: 697 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 630
+Step 200 | Left wall: 40 mm | Forward: 630 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 563
+Step 300 | Left wall: 40 mm | Forward: 563 mm
+  SENSOR [left_wall]: 38
+  SENSOR [forward]: 499
+Step 400 | Left wall: 38 mm | Forward: 499 mm
+  SENSOR [left_wall]: 38
+  SENSOR [forward]: 420
+Step 500 | Left wall: 38 mm | Forward: 420 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 347
+Step 600 | Left wall: 40 mm | Forward: 347 mm
+  SENSOR [left_wall]: 44
+  SENSOR [forward]: 282
+Step 700 | Left wall: 44 mm | Forward: 282 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 209
+Step 800 | Left wall: 40 mm | Forward: 209 mm
+  SENSOR [left_wall]: 40
+  SENSOR [forward]: 138
+Step 900 | Left wall: 40 mm | Forward: 138 mm
+  SENSOR [left_wall]: 49
+  SENSOR [forward]: 65
+Step 1000 | Left wall: 49 mm | Forward: 65 mm
+  SENSOR [left_wall]: 662
+  SENSOR [forward]: 44
+Step 1100 | Left wall: 662 mm | Forward: 44 mm
+2. DECISION: OPEN LEFT PASSAGE (Distance: 662mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 471
+3. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+4. DECISION: OPEN LEFT PASSAGE (Distance: 622mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 879
+5. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+6. DECISION: OPEN LEFT PASSAGE (Distance: 590mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 603
+7. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+  SENSOR [left_wall]: 49
+  SENSOR [forward]: 538
+Step 1200 | Left wall: 49 mm | Forward: 538 mm
+  SENSOR [left_wall]: 147
+  SENSOR [forward]: 49
+Step 1300 | Left wall: 147 mm | Forward: 49 mm
+8. DECISION: OPEN LEFT PASSAGE (Distance: 1008mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 138
+9. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+10. DECISION: OPEN LEFT PASSAGE (Distance: 907mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 91
+11. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+  SENSOR [left_wall]: 286
+  SENSOR [forward]: 59
+Step 1400 | Left wall: 286 mm | Forward: 59 mm
+12. DECISION: OPEN LEFT PASSAGE (Distance: 864mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 772
+13. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+14. DECISION: OPEN LEFT PASSAGE (Distance: 2132mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 617
+15. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+  SENSOR [left_wall]: 77
+  SENSOR [forward]: 607
+Step 1500 | Left wall: 77 mm | Forward: 607 mm
+16. DECISION: OPEN LEFT PASSAGE (Distance: 985mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 921
+17. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+18. DECISION: OPEN LEFT PASSAGE (Distance: 649mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 774
+19. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+20. DECISION: OPEN LEFT PASSAGE (Distance: 653mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 595
+21. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+  SENSOR [left_wall]: 74
+  SENSOR [forward]: 36
+Step 1600 | Left wall: 74 mm | Forward: 36 mm
+22. DECISION: OPEN LEFT PASSAGE (Distance: 787mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 626
+23. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+24. DECISION: OPEN LEFT PASSAGE (Distance: 1115mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 925
+25. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+26. DECISION: OPEN LEFT PASSAGE (Distance: 563mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 899
+27. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+28. DECISION: OPEN LEFT PASSAGE (Distance: 527mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 873
+29. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+30. DECISION: OPEN LEFT PASSAGE (Distance: 509mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Turning LEFT into open passage...
+  TURN: -90 degrees - Open left passage - turn left
+  SENSOR [forward_after_left_passage]: 515
+31. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, continuing...
+  SENSOR [left_wall]: 51
+  SENSOR [forward]: 464
+Step 1700 | Left wall: 51 mm | Forward: 464 mm
+  SENSOR [left_wall]: 181
+  SENSOR [forward]: 40
+Step 1800 | Left wall: 181 mm | Forward: 40 mm
+Program ended by stop button
+----------
+Completed successfully.
