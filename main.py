@@ -50,14 +50,15 @@ def main():
                                        regulator_ki=0.1,
                                        regulator_kd=0.2)
     elif behavior_name=="maze":
-        # MazeSolver with threshold band wall-following (better for curves)
+        # MazeSolver with optimized dual-sensor decision-making
         behavior=BehaviorFactory.create("maze", 
-                                       distance_threshold_low=35,   # Minimum acceptable distance from wall
-                                       distance_threshold_high=50,  # Maximum acceptable distance from wall
-                                       base_speed=30,               # Moderate speed for safety
-                                       min_forward_distance=30,     # Stop at 30mm from obstacle
+                                       distance_threshold_low=35,   # Minimum acceptable distance from left wall
+                                       distance_threshold_high=50,  # Maximum acceptable distance from left wall
+                                       base_speed=25,               # Reduced speed for better control (was 30)
+                                       min_forward_distance=60,     # Approach distance - slow down at 60mm
+                                       obstacle_threshold=35,       # Critical distance - turn at 30-35mm
                                        regulator_type="PID",
-                                       regulator_kp=10.0,           # Aggressive for quick wall tracking
+                                       regulator_kp=2.0,           # Aggressive for quick wall tracking
                                        regulator_ki=0.01,           # Eliminate steady-state error
                                        regulator_kd=0.02)           # Dampen oscillations
         
