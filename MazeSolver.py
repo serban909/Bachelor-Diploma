@@ -6,7 +6,6 @@ from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from Behavior import Behavior
 from PathLogger import PathLogger
-from DataExporter import DataExporter
 from PIDRegulator import PIDRegulator
 from PIFuzzyRegulator import PIFuzzyRegulator
 
@@ -57,6 +56,87 @@ class MazeSolver(Behavior):
         self.open_passage_consecutive_count = 0
         self.open_passage_required_count = 3  # Require 3 consecutive readings before turning
         
+        # Sensor filtering - moving average of last 3 readings
+        self.forward_history = [1000, 1000, 1000]  # Initialize with large values
+        self.left_history = [1000, 1000, 1000]
+        self.filter_size = 3
+        
+    def _filter_sensor_reading(self, new_reading, history):
+        """
+        Apply moving average filter to sensor reading.
+        Reduces noise from ultrasonic sensors.
+        
+        Args:
+            new_reading: New sensor value (mm)
+            history: List of previous readings
+            
+        Returns:
+            Filtered (averaged) reading
+        """
+        # Shift history and add new reading
+        history[0] = history[1]
+        history[1] = history[2]
+        history[2] = new_reading
+        
+        # Return average of last 3 readings
+        return (history[0] + history[1] + history[2]) / 3.0
+    
+    def _peek_and_turn(self, hardware_adapter, target_angle, reason):
+        """
+        Incrementally rotate and check sensors before committing to full turn.
+        Rotates in small steps (30 degrees) and checks if path is clear.
+        
+        Args:
+            hardware_adapter: Hardware interface
+            target_angle: Total angle to turn (positive=right, negative=left)
+            reason: Description for logging
+            
+        Returns:
+            True if path became clear during rotation, False if blocked
+        """
+        increment = 30 if target_angle > 0 else -30  # 30 degree steps
+        total_turned = 0
+        
+        print("Peek-and-turn:", "RIGHT" if target_angle > 0 else "LEFT", "target:", target_angle, "degrees")
+        
+        while abs(total_turned) < abs(target_angle):
+            # Turn one increment
+            hardware_adapter.turn_angle(increment)
+            total_turned += increment
+            wait(300)  # Stabilize
+            
+            # Check sensors after this increment
+            forward = int(self._filter_sensor_reading(hardware_adapter.distance_mm(), self.forward_history))
+            left = int(self._filter_sensor_reading(hardware_adapter.left_wall_distance_mm(), self.left_history))
+            
+            print("  Rotated", total_turned, "deg | Forward:", forward, "mm, Left:", left, "mm")
+            
+            # Check if path is now clear
+            if forward >= self.min_forward_distance:
+                print("  Path CLEAR after", total_turned, "degrees!")
+                self.logger.log_turn(total_turned, reason + " (clear after " + str(total_turned) + " deg)")
+                self.logger.log_sensor_reading(
+                    "peek_result",
+                    "Forward=" + str(forward) + "mm, Left=" + str(left) + "mm",
+                    "Path clear at " + str(total_turned) + " deg"
+                )
+                return True
+        
+        # Completed full rotation
+        print("  Completed full", target_angle, "degree turn")
+        self.logger.log_turn(target_angle, reason + " (full turn)")
+        
+        # Final sensor check
+        forward = int(self._filter_sensor_reading(hardware_adapter.distance_mm(), self.forward_history))
+        left = int(self._filter_sensor_reading(hardware_adapter.left_wall_distance_mm(), self.left_history))
+        self.logger.log_sensor_reading(
+            "after_full_turn",
+            "Forward=" + str(forward) + "mm, Left=" + str(left) + "mm",
+            "After " + str(target_angle) + " deg turn"
+        )
+        
+        return forward >= self.min_forward_distance
+    
     def on_start(self, hardware_adapter):
         hardware_adapter.ev3.speaker.beep()
         print("\n=== Continuous Wall-Following Maze Solver ===")
@@ -97,18 +177,22 @@ class MazeSolver(Behavior):
         self.step_count += 1
         self.steps_since_last_turn += 1
         
-        # Read BOTH sensors simultaneously
-        forward_distance = hardware_adapter.distance_mm()  # Forward-facing sensor (Port S4)
-        left_wall_distance = hardware_adapter.left_wall_distance_mm()  # Left-facing sensor (Port S1)
+        # Read BOTH sensors and apply filtering
+        forward_raw = hardware_adapter.distance_mm()  # Forward-facing sensor (Port S4)
+        left_raw = hardware_adapter.left_wall_distance_mm()  # Left-facing sensor (Port S1)
         
-        # Log BOTH sensor readings every cycle
+        # Apply moving average filter to reduce noise
+        forward_distance = int(self._filter_sensor_reading(forward_raw, self.forward_history))
+        left_wall_distance = int(self._filter_sensor_reading(left_raw, self.left_history))
+        
+        # Log BOTH sensor readings every cycle (filtered values)
         if self.step_count % self.log_interval == 0:
             self.logger.log_sensor_reading(
                 "dual_sensors",
-                "Forward=" + str(forward_distance) + "mm, Left=" + str(left_wall_distance) + "mm",
+                "Forward=" + str(forward_distance) + "mm, Left=" + str(left_wall_distance) + "mm (filtered)",
                 "Step " + str(self.step_count)
             )
-            print("Step", self.step_count, "| Forward:", forward_distance, "mm | Left:", left_wall_distance, "mm")
+            print("Step", self.step_count, "| Forward:", forward_distance, "mm | Left:", left_wall_distance, "mm (filtered)")
         
         # DECISION 1: CRITICAL OBSTACLE - Must turn NOW (30-35mm threshold)
         if forward_distance <= self.obstacle_threshold or left_wall_distance <= self.obstacle_threshold:
@@ -182,6 +266,8 @@ class MazeSolver(Behavior):
         # Use threshold band control to stay centered
         self.open_passage_consecutive_count = 0  # Reset since wall is present
         
+        steering = 0  # Initialize steering value
+        
         if left_wall_distance < self.distance_threshold_low:
             # TOO CLOSE to left wall - steer RIGHT
             if self.regulator is not None:
@@ -193,6 +279,10 @@ class MazeSolver(Behavior):
                 steering = 300
             elif steering < -300:
                 steering = -300
+            
+            # Log steering value periodically
+            if self.step_count % self.log_interval == 0:
+                print("  -> Steering: RIGHT", int(steering), "deg/s (too close to left wall)")
             
             hardware_adapter.drive_turn_rate(self.base_speed, steering)
             
@@ -208,12 +298,21 @@ class MazeSolver(Behavior):
             elif steering < -300:
                 steering = -300
             
+            # Log steering value periodically
+            if self.step_count % self.log_interval == 0:
+                print("  -> Steering: LEFT", int(steering), "deg/s (too far from left wall)")
+            
             hardware_adapter.drive_turn_rate(self.base_speed, steering)
             
         else:
             # WITHIN BAND - go straight
             if self.regulator is not None:
                 self.regulator.reset()
+            
+            # Log steering value periodically
+            if self.step_count % self.log_interval == 0:
+                print("  -> Steering: STRAIGHT (within band)")
+            
             hardware_adapter.drive_forward(self.base_speed)
         
         distance_this_step = self.base_speed * dt
@@ -236,92 +335,59 @@ class MazeSolver(Behavior):
         """
         
         # Check left sensor status at time of obstacle detection
-        # Left is clear if distance > obstacle_threshold (typically > 35mm means no immediate wall)
-        if left_wall_distance > 100:  # No immediate left wall = left path likely clear
-            # LEFT PATH CLEAR - Turn left immediately (no need to check after turn)
-            print("Decision: Left path CLEAR, turning LEFT...")
+        # Left is clear if distance > 60mm (lowered from 100mm for better detection)
+        if left_wall_distance > 30:  # No immediate left wall = left path likely clear
+            # LEFT PATH CLEAR - Peek and turn left incrementally
+            print("Decision: Left path CLEAR, peek-and-turn LEFT...")
             self.logger.log_decision(
                 "TURN_LEFT_CLEAR",
                 "Front blocked (" + str(forward_distance) + "mm), Left clear (" + str(left_wall_distance) + "mm)"
             )
             
-            hardware_adapter.turn_angle(-90)
-            self.logger.log_turn(-90, "Left path clear - turn left")
-            wait(500)
+            # Use incremental rotation with sensor checks
+            path_clear = self._peek_and_turn(hardware_adapter, -90, "Left path clear")
             
-            # Verify forward is now clear after turn
-            new_forward = hardware_adapter.distance_mm()
-            new_left = hardware_adapter.left_wall_distance_mm()
-            self.logger.log_sensor_reading(
-                "after_left_turn",
-                "Forward=" + str(new_forward) + "mm, Left=" + str(new_left) + "mm",
-                "Post-turn sensor check"
-            )
-            print("After LEFT turn: Forward=", new_forward, "mm, Left=", new_left, "mm")
-            
-            if new_forward >= self.min_forward_distance:
+            if path_clear:
                 self.logger.log_decision("LEFT_SUCCESS", "Path clear after left turn")
-                print("Left turn successful, continuing...")
+                print("Left turn successful, path is clear!")
             else:
-                self.logger.log_decision("LEFT_BLOCKED", "Warning: Still blocked after left turn")
+                self.logger.log_decision("LEFT_BLOCKED", "Path still blocked after left turn")
                 print("Warning: Path still blocked after left turn!")
             
             if self.regulator is not None:
                 self.regulator.reset()
             return
         
-        else:  # left_wall_distance < 500 (left wall present = left path blocked)
-            # BOTH FRONT AND LEFT BLOCKED - Try turning RIGHT
-            print("Decision: Front AND Left blocked, trying RIGHT...")
+        else:  # left_wall_distance <= 60mm (left wall present = left path blocked)
+            # BOTH FRONT AND LEFT BLOCKED - Peek and try turning RIGHT
+            print("Decision: Front AND Left blocked, peek-and-turn RIGHT...")
             self.logger.log_decision(
                 "TURN_RIGHT_TRY",
                 "Front blocked (" + str(forward_distance) + "mm), Left blocked (" + str(left_wall_distance) + "mm)"
             )
             
-            hardware_adapter.turn_angle(90)
-            self.logger.log_turn(90, "Front+Left blocked - try right")
-            wait(500)
+            # Use incremental rotation with sensor checks
+            path_clear = self._peek_and_turn(hardware_adapter, 90, "Front+Left blocked - try right")
             
-            # Check if right path is clear
-            new_forward = hardware_adapter.distance_mm()
-            new_left = hardware_adapter.left_wall_distance_mm()
-            self.logger.log_sensor_reading(
-                "after_right_turn",
-                "Forward=" + str(new_forward) + "mm, Left=" + str(new_left) + "mm",
-                "Post-turn sensor check"
-            )
-            print("After RIGHT turn: Forward=", new_forward, "mm, Left=", new_left, "mm")
-            
-            if new_forward >= self.min_forward_distance:
+            if path_clear:
                 # RIGHT PATH CLEAR - Continue
                 self.logger.log_decision("RIGHT_SUCCESS", "Right path clear")
-                print("Right turn successful, continuing...")
+                print("Right turn successful, path is clear!")
                 
                 if self.regulator is not None:
                     self.regulator.reset()
                 return
             
             else:
-                # ALL THREE DIRECTIONS BLOCKED - DEAD END
-                print("Decision: DEAD END detected, turning 180°...")
+                # ALL THREE DIRECTIONS BLOCKED - DEAD END - Turn 180° incrementally
+                print("Decision: DEAD END detected, peek-and-turn 180°...")
                 self.logger.log_decision(
                     "DEAD_END",
                     "All paths blocked - turning around"
                 )
                 
-                hardware_adapter.turn_angle(180)
-                self.logger.log_turn(180, "Dead end - turn around")
-                wait(500)
-                
-                # Final sensor check
-                final_forward = hardware_adapter.distance_mm()
-                final_left = hardware_adapter.left_wall_distance_mm()
-                self.logger.log_sensor_reading(
-                    "after_180_turn",
-                    "Forward=" + str(final_forward) + "mm, Left=" + str(final_left) + "mm",
-                    "After 180° turn"
-                )
-                print("After 180° turn: Forward=", final_forward, "mm, Left=", final_left, "mm")
+                # Turn 180 degrees incrementally (will turn right another 90)
+                self._peek_and_turn(hardware_adapter, 90, "Dead end - turn around (180 total)")
                 
                 if self.regulator is not None:
                     self.regulator.reset()
@@ -338,21 +404,15 @@ class MazeSolver(Behavior):
         print("Cooldown satisfied:", self.steps_since_last_turn, "steps since last turn")
         print("Consecutive readings:", self.open_passage_consecutive_count)
         
-        # Turn left into the open passage - EXACT 90 degrees
-        print("Turning LEFT 90 degrees into open passage...")
-        hardware_adapter.turn_angle(-90)
-        self.logger.log_turn(-90, "Open left passage - turn left")
-        wait(500)  # Increased delay for robot to stabilize after turn
+        # Peek and turn left into the open passage - incremental 30° steps
+        print("Peek-and-turn LEFT into open passage...")
+        path_clear = self._peek_and_turn(hardware_adapter, -90, "Open left passage - turn left")
         
-        # Check if forward path is clear
-        forward_distance = hardware_adapter.distance_mm()
-        self.logger.log_sensor_reading("forward_after_left_passage", forward_distance, "")
-        
-        if forward_distance >= self.min_forward_distance:
+        if path_clear:
             self.logger.log_decision("LEFT PASSAGE SUCCESS", "Entered left passage")
-            print("Entered left passage successfully, continuing...")
+            print("Entered left passage successfully, path is clear!")
         else:
-            # Forward blocked after turning - this shouldn't happen often
+            # Forward blocked after turning - might need to continue or turn more
             self.logger.log_decision("LEFT PASSAGE BLOCKED", "Obstacle after turning left")
             print("Warning: Obstacle detected after turning left")
         
@@ -394,10 +454,4 @@ class MazeSolver(Behavior):
             elif entry['type'] == 'turn':
                 print("  -> TURN: " + str(entry['angle']) + " degrees - " + entry['description'])
         
-        # Export data to files
-        print("\n" + "="*40)
-        print("Exporting data to files...")
-        DataExporter.export_log_to_file(self.logger, "maze_run_log.txt")
-        DataExporter.export_training_data(self.logger, "maze_training.csv")
-        print("Data exported successfully!")
         print("="*40)

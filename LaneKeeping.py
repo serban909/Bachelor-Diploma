@@ -6,7 +6,6 @@ from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from Behavior import Behavior
 from PathLogger import PathLogger
-from DataExporter import DataExporter
 from PIDRegulator import PIDRegulator
 from PIFuzzyRegulator import PIFuzzyRegulator
 
@@ -86,8 +85,3 @@ class LaneKeeping(Behavior):
         print("Total steps:", self.step_count)
         print("Logged events:", summary['total_actions'])
         print("="*40 + "\n")
-        
-        # Export data to files in current directory
-        print("\nExporting data to files...")
-        DataExporter.export_log_to_file(self.logger, "lane_log.txt")
-        DataExporter.export_training_data(self.logger, "lane_training.csv")

@@ -12,8 +12,11 @@ class HardwareAdapter:
         self.right_motor = Motor(right_motor_port)
         self.ultrasonic_sensor = UltrasonicSensor(ultrasonic_sensor_port)
         self.left_ultrasonic_sensor = UltrasonicSensor(left_ultrasonic_port)
-        self.left_color_sensor = ColorSensor(left_color_port)
-        self.right_color_sensor = ColorSensor(right_color_port)
+        # Color sensors commented out - not connected
+        # self.left_color_sensor = ColorSensor(left_color_port)
+        # self.right_color_sensor = ColorSensor(right_color_port)
+        self.left_color_sensor = None
+        self.right_color_sensor = None
         self.robot = DriveBase(self.left_motor, self.right_motor, wheel_diameter=wheel_diameter, axle_track=axle_track)
 
     def drive_forward(self, speed_mm_s):

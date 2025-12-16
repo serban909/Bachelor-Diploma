@@ -1,0 +1,281 @@
+Starting: brickrun --directory="/home/robot/Project_1" "/home/robot/Project_1/main.py"
+----------
+
+=== Continuous Wall-Following Maze Solver ===
+Wall distance band: 30 - 50 mm
+Target (center): 40 mm
+Base speed: 25 mm/s
+Approach distance (slow down): 60 mm
+Obstacle threshold (turn): 30 mm
+Regulator: PID (Kp= 6.0 , Ki= 0.02 , Kd= 0.05 )
+Mode: Continuous left-hand wall following
+==============================
+
+1. DECISION: START (Continuous wall-following mode initialized)
+  SENSOR [dual_sensors]: Forward=750mm, Left=47mm (filtered) -> Step 100
+Step 100 | Forward: 750 mm | Left: 47 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=697mm, Left=46mm (filtered) -> Step 200
+Step 200 | Forward: 697 mm | Left: 46 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=640mm, Left=44mm (filtered) -> Step 300
+Step 300 | Forward: 640 mm | Left: 44 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=580mm, Left=41mm (filtered) -> Step 400
+Step 400 | Forward: 580 mm | Left: 41 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=542mm, Left=40mm (filtered) -> Step 500
+Step 500 | Forward: 542 mm | Left: 40 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=459mm, Left=40mm (filtered) -> Step 600
+Step 600 | Forward: 459 mm | Left: 40 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=397mm, Left=38mm (filtered) -> Step 700
+Step 700 | Forward: 397 mm | Left: 38 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=337mm, Left=38mm (filtered) -> Step 800
+Step 800 | Forward: 337 mm | Left: 38 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=278mm, Left=36mm (filtered) -> Step 900
+Step 900 | Forward: 278 mm | Left: 36 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+2. DECISION: CRITICAL_OBSTACLE (Forward=248mm, Left=30mm (<=30mm))
+
+*** CRITICAL OBSTACLE - TURNING ***
+Forward: 248 mm | Left: 30 mm
+Decision: Front AND Left blocked, peek-and-turn RIGHT...
+3. DECISION: TURN_RIGHT_TRY (Front blocked (248mm), Left blocked (30mm))
+Peek-and-turn: RIGHT target: 90 degrees
+  Rotated 30 deg | Forward: 249 mm, Left: 33 mm
+  Path CLEAR after 30 degrees!
+  TURN: 30 degrees - Front+Left blocked - try right (clear after 30 deg)
+  SENSOR [peek_result]: Forward=249mm, Left=33mm -> Path clear at 30 deg
+4. DECISION: RIGHT_SUCCESS (Right path clear)
+Right turn successful, path is clear!
+  SENSOR [dual_sensors]: Forward=226mm, Left=46mm (filtered) -> Step 1000
+Step 1000 | Forward: 226 mm | Left: 46 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+  SENSOR [dual_sensors]: Forward=165mm, Left=50mm (filtered) -> Step 1100
+Step 1100 | Forward: 165 mm | Left: 50 mm (filtered)
+  -> Steering: STRAIGHT (within band)
+5. DECISION: OPEN_LEFT_PASSAGE (Forward=159mm, Left=70mm (open))
+6. DECISION: OPEN LEFT PASSAGE (Distance: 70mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 189 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 139 mm, Left: 156 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=139mm, Left=156mm -> Path clear at -30 deg
+7. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+8. DECISION: OPEN_LEFT_PASSAGE (Forward=62mm, Left=822mm (open))
+9. DECISION: OPEN LEFT PASSAGE (Distance: 822mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 58 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 49 mm, Left: 815 mm
+  Rotated -60 deg | Forward: 44 mm, Left: 810 mm
+  Rotated -90 deg | Forward: 52 mm, Left: 770 mm
+  Completed full -90 degree turn
+  TURN: -90 degrees - Open left passage - turn left (full turn)
+  SENSOR [after_full_turn]: Forward=65mm, Left=739mm -> After -90 deg turn
+10. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=78mm, Left=704mm (filtered) -> Step 1200
+Step 1200 | Forward: 78 mm | Left: 704 mm (filtered)
+11. DECISION: OPEN_LEFT_PASSAGE (Forward=840mm, Left=526mm (open))
+12. DECISION: OPEN LEFT PASSAGE (Distance: 526mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 843 mm, Left: 372 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=843mm, Left=372mm -> Path clear at -30 deg
+13. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+14. DECISION: OPEN_LEFT_PASSAGE (Forward=534mm, Left=94mm (open))
+15. DECISION: OPEN LEFT PASSAGE (Distance: 94mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 641 mm, Left: 286 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=641mm, Left=286mm -> Path clear at -30 deg
+16. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=727mm, Left=672mm (filtered) -> Step 1300
+Step 1300 | Forward: 727 mm | Left: 672 mm (filtered)
+17. DECISION: OPEN_LEFT_PASSAGE (Forward=723mm, Left=86mm (open))
+18. DECISION: OPEN LEFT PASSAGE (Distance: 86mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 734 mm, Left: 287 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=734mm, Left=287mm -> Path clear at -30 deg
+19. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=722mm, Left=687mm (filtered) -> Step 1400
+Step 1400 | Forward: 722 mm | Left: 687 mm (filtered)
+20. DECISION: OPEN_LEFT_PASSAGE (Forward=716mm, Left=500mm (open))
+21. DECISION: OPEN LEFT PASSAGE (Distance: 500mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 614 mm, Left: 378 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=614mm, Left=378mm -> Path clear at -30 deg
+22. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+23. DECISION: OPEN_LEFT_PASSAGE (Forward=416mm, Left=326mm (open))
+24. DECISION: OPEN LEFT PASSAGE (Distance: 326mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 292 mm, Left: 301 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=292mm, Left=301mm -> Path clear at -30 deg
+25. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=36mm, Left=255mm (filtered) -> Step 1500
+Step 1500 | Forward: 36 mm | Left: 255 mm (filtered)
+26. DECISION: OPEN_LEFT_PASSAGE (Forward=65mm, Left=257mm (open))
+27. DECISION: OPEN LEFT PASSAGE (Distance: 257mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 95 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 49 mm, Left: 259 mm
+  Rotated -60 deg | Forward: 43 mm, Left: 268 mm
+  Rotated -90 deg | Forward: 123 mm, Left: 288 mm
+  Path CLEAR after -90 degrees!
+  TURN: -90 degrees - Open left passage - turn left (clear after -90 deg)
+  SENSOR [peek_result]: Forward=123mm, Left=288mm -> Path clear at -90 deg
+28. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=258mm, Left=103mm (filtered) -> Step 1600
+Step 1600 | Forward: 258 mm | Left: 103 mm (filtered)
+29. DECISION: OPEN_LEFT_PASSAGE (Forward=260mm, Left=107mm (open))
+30. DECISION: OPEN LEFT PASSAGE (Distance: 107mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 247 mm, Left: 96 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=247mm, Left=96mm -> Path clear at -30 deg
+31. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+32. DECISION: OPEN_LEFT_PASSAGE (Forward=198mm, Left=76mm (open))
+33. DECISION: OPEN LEFT PASSAGE (Distance: 76mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 198 mm, Left: 79 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=198mm, Left=79mm -> Path clear at -30 deg
+34. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=191mm, Left=82mm (filtered) -> Step 1700
+Step 1700 | Forward: 191 mm | Left: 82 mm (filtered)
+35. DECISION: OPEN_LEFT_PASSAGE (Forward=184mm, Left=84mm (open))
+36. DECISION: OPEN LEFT PASSAGE (Distance: 84mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 195 mm, Left: 99 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=195mm, Left=99mm -> Path clear at -30 deg
+37. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+38. DECISION: OPEN_LEFT_PASSAGE (Forward=207mm, Left=856mm (open))
+39. DECISION: OPEN LEFT PASSAGE (Distance: 856mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 53 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 157 mm, Left: 821 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=157mm, Left=821mm -> Path clear at -30 deg
+40. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=46mm, Left=788mm (filtered) -> Step 1800
+Step 1800 | Forward: 46 mm | Left: 788 mm (filtered)
+  SENSOR [dual_sensors]: Forward=52mm, Left=794mm (filtered) -> Step 1900
+Step 1900 | Forward: 52 mm | Left: 794 mm (filtered)
+41. DECISION: OPEN_LEFT_PASSAGE (Forward=78mm, Left=783mm (open))
+42. DECISION: OPEN LEFT PASSAGE (Distance: 783mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 150 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+  Rotated -30 deg | Forward: 66 mm, Left: 782 mm
+  Path CLEAR after -30 degrees!
+  TURN: -30 degrees - Open left passage - turn left (clear after -30 deg)
+  SENSOR [peek_result]: Forward=66mm, Left=782mm -> Path clear at -30 deg
+43. DECISION: LEFT PASSAGE SUCCESS (Entered left passage)
+Entered left passage successfully, path is clear!
+  SENSOR [dual_sensors]: Forward=46mm, Left=794mm (filtered) -> Step 2000
+Step 2000 | Forward: 46 mm | Left: 794 mm (filtered)
+44. DECISION: OPEN_LEFT_PASSAGE (Forward=61mm, Left=794mm (open))
+45. DECISION: OPEN LEFT PASSAGE (Distance: 794mm (no wall))
+
+*** OPEN LEFT PASSAGE - Turning left (left-hand rule) ***
+Cooldown satisfied: 179 steps since last turn
+Consecutive readings: 3
+Peek-and-turn LEFT into open passage...
+Peek-and-turn: LEFT target: -90 degrees
+Program ended by stop button
+----------
+Completed successfully.
+
+___
+|
+|
+|
+|

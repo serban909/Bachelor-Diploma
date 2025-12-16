@@ -50,17 +50,17 @@ def main():
                                        regulator_ki=0.1,
                                        regulator_kd=0.2)
     elif behavior_name=="maze":
-        # MazeSolver with optimized dual-sensor decision-making
+        # MazeSolver with optimized dual-sensor decision-making + sensor filtering
         behavior=BehaviorFactory.create("maze", 
-                                       distance_threshold_low=35,   # Minimum acceptable distance from left wall
+                                       distance_threshold_low=30,   # Minimum acceptable distance from left wall
                                        distance_threshold_high=50,  # Maximum acceptable distance from left wall
-                                       base_speed=25,               # Reduced speed for better control (was 30)
+                                       base_speed=25,               # Reduced speed for better control
                                        min_forward_distance=60,     # Approach distance - slow down at 60mm
-                                       obstacle_threshold=35,       # Critical distance - turn at 30-35mm
+                                       obstacle_threshold=30,       # Critical distance - turn at 30-35mm
                                        regulator_type="PID",
-                                       regulator_kp=2.0,           # Aggressive for quick wall tracking
-                                       regulator_ki=0.01,           # Eliminate steady-state error
-                                       regulator_kd=0.02)           # Dampen oscillations
+                                       regulator_kp=6.0,            # Moderate for smooth wall tracking (was 10.0, reduced for stability)
+                                       regulator_ki=0.02,           # Eliminate steady-state error (increased slightly)
+                                       regulator_kd=0.05)           # Dampen oscillations (increased for stability)
         
     behavior.on_start(hw)
     
