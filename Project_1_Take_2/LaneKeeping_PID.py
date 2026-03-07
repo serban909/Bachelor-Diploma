@@ -5,6 +5,7 @@ from pybricks.ev3devices import Motor, ColorSensor
 from pybricks.parameters import Port
 from pybricks.tools import wait
 from pybricks.robotics import DriveBase
+import socket
 
 LEFT_MOTOR_PORT = Port.A
 RIGHT_MOTOR_PORT = Port.C
@@ -37,6 +38,12 @@ INTEGRAL_MAX = 100.0   # Anti-windup: maximum integral value
 
 LOG_INTERVAL = 50 
 
+# Wi-Fi streaming configuration for real-time plotting
+ENABLE_STREAMING = True  # Set to False to disable Wi-Fi streaming
+PC_IP = "192.168.1.100"  # CHANGE THIS to your PC's IP address
+PC_PORT = 5005           # Port number for data streaming
+STREAM_INTERVAL = 5      # Send data every N steps (to reduce network load)
+
 ev3 = EV3Brick()
 
 left_motor = Motor(LEFT_MOTOR_PORT)
@@ -53,6 +60,16 @@ pid_previous_error = 0.0
 step_count = 0
 both_black_count = 0  # Counter for consecutive both-black detections
 
+# Wi-Fi socket for streaming data
+sock = None
+if ENABLE_STREAMING:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print("Wi-Fi streaming enabled - sending to " + PC_IP + ":" + str(PC_PORT))
+    except Exception as e:
+        print("Warning: Could not create socket - " + str(e))
+        sock = None
+
 def read_sensors():
     
     left_r = left_color_sensor.reflection()
@@ -63,7 +80,7 @@ def read_sensors():
 def pid_compute(setpoint, measured_value, dt):
     
     global pid_integral, pid_previous_error
-    
+    # error is the entry
     error = setpoint - measured_value
     
     p_term = KP * error
@@ -81,7 +98,7 @@ def pid_compute(setpoint, measured_value, dt):
     else:
         derivative = 0.0
     d_term = KD * derivative
-
+    # outoutput is the iesire
     output = p_term + i_term + d_term
 
     if output > PID_MAX_OUTPUT:
@@ -91,12 +108,24 @@ def pid_compute(setpoint, measured_value, dt):
 
     pid_previous_error = error
     
-    return output
+    return error, output  # Return both error and output for streaming
 
 def pid_reset():
     global pid_integral, pid_previous_error
     pid_integral = 0.0
     pid_previous_error = 0.0
+
+def send_data(step, error, output):
+    """Send PID data over Wi-Fi to PC for plotting"""
+    global sock
+    if sock is not None:
+        try:
+            # Format: step,error,output
+            data = str(step) + "," + str(error) + "," + str(output) + "\n"
+            sock.sendto(data.encode(), (PC_IP, PC_PORT))
+        except Exception as e:
+            # Silently ignore network errors to keep robot running
+            pass
 
 def main():
     global step_count, both_black_count
@@ -192,7 +221,11 @@ def main():
                 # PID control based on sensor difference
                 # Target is 0 (balanced sensors), measured value is the difference
                 # When left darker (negative diff), PID outputs positive → turn right
-                turn_rate = pid_compute(0, difference, dt)
+                error, turn_rate = pid_compute(0, difference, dt)
+                
+                # Send data for real-time plotting
+                if ENABLE_STREAMING and step_count % STREAM_INTERVAL == 0:
+                    send_data(step_count, error, turn_rate)
                 
                 # Reduce speed when turning to prevent overshoot
                 speed = TURNING_SPEED
