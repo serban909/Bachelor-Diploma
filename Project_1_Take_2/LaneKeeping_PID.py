@@ -16,33 +16,36 @@ WHEEL_DIAMETER = 55.5
 AXLE_TRACK = 104       
 
 # IMPORTANT: Run TestColor.py first to calibrate these values for your track!
-# This code uses COMPARATIVE control with PID feedback
-BLACK_THRESHOLD = 12    # Absolute black line detection (for stop condition)
-CROSSING_THRESHOLD = 11 # Emergency: sensor is crossing/on black line
+# Mode: both sensors straddle the black line on a white surface.
+# Normal state: both sensors read white (high reflection).
+# Drift right -> left sensor approaches line -> left_r drops -> turn left.
+# Drift left  -> right sensor approaches line -> right_r drops -> turn right.
+
+BLACK_THRESHOLD = 6    # Absolute black line detection (for stop condition)
+CROSSING_THRESHOLD = 9 # Emergency: sensor is crossing/on black line
 MIN_DIFFERENCE = 3      # Minimum sensor difference to trigger PID steering
 BASE_SPEED = 50         # Base forward speed in mm/s when going straight
 TURNING_SPEED = 30      # Reduced speed when steering (to prevent overshoot)
 EMERGENCY_SPEED = 20    # Very slow when recovering from line crossing
-EMERGENCY_TURN = 200    # Strong turn rate when crossing a line
+EMERGENCY_TURN = 35    # Strong turn rate when crossing a line
 STOP_CONFIRM_COUNT = 3  # Number of consecutive readings needed to confirm stop      
 
 # PID tuning parameters for comparative control
-KP = 8.0    # Proportional gain (tune for responsiveness)
-KI = 0.1    # Integral gain (reduces steady-state error)
-KD = 0.5    # Derivative gain (dampens oscillation)    
+KP = 0.8    # Proportional gain (tune for responsiveness)
+KI = 0.05    # Integral gain (reduces steady-state error)
+KD = 0.000    # Derivative gain (set to 0: raw sensor readings are too noisy for D term)
 
-PID_MIN_OUTPUT = -200  # Maximum turn rate limit (left)
-PID_MAX_OUTPUT = 200   # Maximum turn rate limit (right)  
-INTEGRAL_MIN = -100.0  # Anti-windup: minimum integral value
-INTEGRAL_MAX = 100.0   # Anti-windup: maximum integral value  
+PID_MIN_OUTPUT = -40  # Maximum turn rate limit (left)
+PID_MAX_OUTPUT = 40   # Maximum turn rate limit (right)  
+INTEGRAL_MIN = -50.0  # Anti-windup: minimum integral value
+INTEGRAL_MAX = 50.0   # Anti-windup: maximum integral value  
 
 LOG_INTERVAL = 50 
 
 # Wi-Fi streaming configuration for real-time plotting
 ENABLE_STREAMING = True  # Set to False to disable Wi-Fi streaming
-PC_IP = "192.168.1.100"  # CHANGE THIS to your PC's IP address
+PC_IP = "10.194.244.90"  # CHANGE THIS to your PC's IP address
 PC_PORT = 5005           # Port number for data streaming
-STREAM_INTERVAL = 5      # Send data every N steps (to reduce network load)
 
 ev3 = EV3Brick()
 
@@ -134,11 +137,12 @@ def main():
     print("\n" + "="*50)
     print("LANE KEEPING - PID LINE FOLLOWING")
     print("="*50)
-    print("IMPORTANT: Position robot in the WHITE LANE between")
-    print("           the two BLACK lines - both sensors on white")
+    print("IMPORTANT: Position robot so the BLACK LINE is between")
+    print("           the two sensors - both sensors on WHITE")
     print("="*50)
     print("Configuration:")
-    print("  Control mode: PID + Emergency Recovery")
+    print("  Mode: BLACK LINE Following")
+    print("  Control: PID + Emergency Recovery")
     print("  Black threshold: " + str(BLACK_THRESHOLD) + " (for stop detection)")
     print("  Crossing threshold: " + str(CROSSING_THRESHOLD) + " (emergency line detection)")
     print("  Min difference: " + str(MIN_DIFFERENCE) + " (to trigger PID steering)")
@@ -195,22 +199,23 @@ def main():
             else:
                 both_black_count = 0  # Reset counter if not both black
 
-            # Comparative control: steer based on which sensor is darker
-            difference = left_r - right_r
-            
-            # Emergency recovery: if a sensor is on black line, turn away aggressively
+            # Sensor difference: positive when right is darker (robot drifted left),
+            # negative when left is darker (robot drifted right).
+            difference = right_r - left_r
+
+            # Emergency recovery: sensor crossed onto the black line, turn away hard.
             if left_r < CROSSING_THRESHOLD and right_r >= CROSSING_THRESHOLD:
-                # Left sensor crossed line - turn RIGHT aggressively
-                turn_rate = EMERGENCY_TURN
-                speed = EMERGENCY_SPEED
-                if step_count % LOG_INTERVAL == 0:
-                    print("  -> EMERGENCY! Left on line (" + str(left_r) + ") - SHARP RIGHT")
-            elif right_r < CROSSING_THRESHOLD and left_r >= CROSSING_THRESHOLD:
-                # Right sensor crossed line - turn LEFT aggressively
+                # Left sensor on line -> robot drifted right -> turn left
                 turn_rate = -EMERGENCY_TURN
                 speed = EMERGENCY_SPEED
                 if step_count % LOG_INTERVAL == 0:
-                    print("  -> EMERGENCY! Right on line (" + str(right_r) + ") - SHARP LEFT")
+                    print("  -> EMERGENCY! Left on line (" + str(left_r) + ") - SHARP LEFT")
+            elif right_r < CROSSING_THRESHOLD and left_r >= CROSSING_THRESHOLD:
+                # Right sensor on line -> robot drifted left -> turn right
+                turn_rate = EMERGENCY_TURN
+                speed = EMERGENCY_SPEED
+                if step_count % LOG_INTERVAL == 0:
+                    print("  -> EMERGENCY! Right on line (" + str(right_r) + ") - SHARP RIGHT")
             elif abs(difference) < MIN_DIFFERENCE:
                 # Sensors reading similar values - go straight at full speed
                 turn_rate = 0
@@ -221,24 +226,25 @@ def main():
                 # PID control based on sensor difference
                 # Target is 0 (balanced sensors), measured value is the difference
                 # When left darker (negative diff), PID outputs positive → turn right
-                error, turn_rate = pid_compute(0, difference, dt)
-                
-                # Send data for real-time plotting
-                if ENABLE_STREAMING and step_count % STREAM_INTERVAL == 0:
-                    send_data(step_count, error, turn_rate)
-                
+                _, turn_rate = pid_compute(0, difference, dt)
+
                 # Reduce speed when turning to prevent overshoot
                 speed = TURNING_SPEED
-                
+
                 if step_count % LOG_INTERVAL == 0:
                     direction = "RIGHT" if turn_rate > 0 else "LEFT"
-                    print("  -> Diff=" + str(int(difference)) + " - PID Turning " + direction + 
+                    print("  -> Diff=" + str(int(difference)) + " - PID Turning " + direction +
                           " (" + str(int(turn_rate)) + "°/s) at " + str(speed) + "mm/s")
+
+            # Stream every step so the plot has no gaps.
+            # error = -difference in all branches (setpoint is 0, measured is difference).
+            if ENABLE_STREAMING:
+                send_data(step_count, -difference, turn_rate)
 
             # Ensure forward motion only (prevent backward turning)
             if speed < 10:
                 speed = 10
-            
+
             robot.drive(speed, turn_rate)
 
             wait(20)
