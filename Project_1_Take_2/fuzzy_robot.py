@@ -8,9 +8,9 @@ from pybricks.robotics import DriveBase
 import socket
 
 TASK = "MazeSolver"   # "LaneKeeping" / "MazeSolver"
-ALGORITHM = "PID"  # "PID" / "FuzzyPI" / "FuzzyAutomata" / "AbsoluteFuzzy"
+ALGORITHM = "PID"  # "PID" / "FuzzyPI" / "FuzzyAutomata" / "FuzzyRuleBased"
 
-def initializeConfiguration(task, algorithm):
+def initializeConfiguration(task, algorithm): 
     hardware={
         "LeftMotor": Port.A,
         "RightMotor": Port.C,
@@ -31,9 +31,9 @@ def initializeConfiguration(task, algorithm):
             "BlackThreshold": 6,
             "CrossingThreshold": 7,
             "MinDifference": 3,
-            "BaseSpeed": 50,
-            "TurningSpeed": 25,
-            "EmergencySpeed": 20,
+            "BaseSpeed": 90,
+            "TurningSpeed": 70,
+            "EmergencySpeed": 65,
             "EmergencyTurnSpeed": 100,
             "StopConfirmCount": 1,
             "LogInterval": 1,
@@ -42,15 +42,15 @@ def initializeConfiguration(task, algorithm):
         taskConfiguration={
             "ForwardUltrasonicSensor": Port.S4,
             "LeftUltrasonicSensor": Port.S1,
-            "DistanceThresholdLow": 30,
-            "DistanceThresholdHigh": 50,
-            "TargetWallDistance": 35,
-            "BaseSpeed": 25,
-            "SlowSpeed": 12.5,
-            "MinForwardDistance": 60,
-            "ObstacleThreshold": 30,
-            "OpenPassageThreshold": 90,
-            "PeekAngle": 30,
+            "SensorMotor": Port.B,
+            # Speed controller setpoint: at this distance output → 0, further → faster
+            "TargetForwardDistance": 150,
+            "BaseSpeed": 150,
+            "ObstacleThreshold": 100,   # stop + scan when forward < this
+            "MinForwardDistance": 200,  # minimum clear distance to accept a direction after scanning
+            "TurnAngle": 90,
+            "CurveSpeed": 80,       # forward speed (mm/s) during a curve turn
+            "CurveTurnRate": 45,    # heading rate (deg/s); 90 deg / 90 deg/s = 1 s per 90 deg
             "LogInterval": 1,
         }
     else:
@@ -64,18 +64,20 @@ def initializeConfiguration(task, algorithm):
                 "Kd": 0.003,
                 "MinOutput": -100,
                 "MaxOutput": 100,
-                "IntegralMin": -100.0,
-                "IntegralMax": 100.0,
-            }
-        elif task == "MazeSolver":
-            algorithmConfiguration={
-                "Kp": 10.0,
-                "Ki": 0.01,
-                "Kd": 0.02,
-                "MinOutput": -100,
-                "MaxOutput": 100,
                 "IntegralMin": -1000.0,
                 "IntegralMax": 1000.0,
+            }
+        elif task == "MazeSolver":
+            # disturbance = forward - TargetForwardDistance (mm); output = speed (mm/s)
+            # Kp*500mm ≈ 30mm/s → Kp=0.06; MinOutput=0 prevents reversing
+            algorithmConfiguration={
+                "Kp": 0.06,
+                "Ki": 0.001,
+                "Kd": 0.0,
+                "MinOutput": 30,
+                "MaxOutput": 150,
+                "IntegralMin": 0.0,
+                "IntegralMax": 500.0,
             }
     elif algorithm == "FuzzyPI":
         if task == "LaneKeeping":
@@ -87,22 +89,22 @@ def initializeConfiguration(task, algorithm):
                 "LargeDisturbance": 10.0,
                 "FuzzyMinOutput": -100,
                 "FuzzyMaxOutput": 100,
-                "FuzzyIntegralMin": -100.0,
-                "FuzzyIntegralMax": 100.0,
-                "Rules": [(0.8, 0.7), (1.0, 1.0), (1.2, 1.3)],  
+                "FuzzyIntegralMin": -1000.0,
+                "FuzzyIntegralMax": 1000.0,
+                "Rules": [(0.8, 0.7), (1.0, 1.0), (1.2, 1.3)],
             }
         elif task == "MazeSolver":
             algorithmConfiguration={
-                "BaseKP": 10.0,
-                "BaseKI": 0.01,
-                "SmallDisturbance": 5.0,
-                "MediumDisturbance": 15.0,
-                "LargeDisturbance": 30.0,
-                "FuzzyMinOutput": -100,
-                "FuzzyMaxOutput": 100,
-                "FuzzyIntegralMin": -100.0,
-                "FuzzyIntegralMax": 100.0,
-                "Rules": [(0.8, 0.7), (1.0, 1.0), (1.2, 1.3)],  
+                "BaseKP": 0.06,
+                "BaseKI": 0.001,
+                "SmallDisturbance": 50.0,
+                "MediumDisturbance": 200.0,
+                "LargeDisturbance": 500.0,
+                "FuzzyMinOutput": 30,
+                "FuzzyMaxOutput": 150,
+                "FuzzyIntegralMin": 0.0,
+                "FuzzyIntegralMax": 500.0,
+                "Rules": [(0.8, 0.7), (1.0, 1.0), (1.2, 1.3)],
             }
     elif algorithm == "FuzzyAutomata":
         if task == "LaneKeeping":
@@ -120,16 +122,16 @@ def initializeConfiguration(task, algorithm):
                 "MaxTurnCorrection": 60.0,
                 "MinNormalization": 0.05,
             }
-    elif algorithm == "AbsoluteFuzzy":
+    elif algorithm == "FuzzyRuleBased":
         if task == "LaneKeeping":
             algorithmConfiguration={
                 "SmallDisturbance": 3.0,
                 "MediumDisturbance": 6.0,
                 "LargeDisturbance": 10.0,
                 "DeltaThreshold": 3.0,
-                "SmallOutput": 25.0,
-                "MediumOutput": 50.0,
-                "LargeOutput": 80.0,
+                "SmallOutput": 10.0,
+                "MediumOutput": 30.0,
+                "LargeOutput": 50.0,
                 "FuzzyMinOutput": -100,
                 "FuzzyMaxOutput": 100,
                 
@@ -156,16 +158,35 @@ def initializeConfiguration(task, algorithm):
                     ],
             }
         elif task == "MazeSolver":
+            # disturbance = forward - TargetForwardDistance (mm); output = speed (mm/s)
+            # output indices 0-3 are negative/zero (clamped to 0 by FuzzyMinOutput=0)
             algorithmConfiguration={
-                "SmallDisturbance": 3.0,
-                "MediumDisturbance": 6.0,
-                "LargeDisturbance": 10.0,
-                "DeltaThreshold": 3.0,
-                "SmallOutput": 25.0,
-                "MediumOutput": 50.0,
-                "LargeOutput": 80.0,
-                "FuzzyMinOutput": -100,
-                "FuzzyMaxOutput": 100,
+                "SmallDisturbance": 50.0,
+                "MediumDisturbance": 200.0,
+                "LargeDisturbance": 500.0,
+                "DeltaThreshold": 20.0,
+                "SmallOutput": 10.0,
+                "MediumOutput": 20.0,
+                "LargeOutput": 30.0,
+                "FuzzyMinOutput": 90,
+                "FuzzyMaxOutput": 200,
+                "Rules": [
+                        (0, 0, 3),  # R1:  NL & N -> ZE: below target, closing   -> stop
+                        (0, 1, 3),  # R2:  NL & Z -> ZE: below target, stable    -> stop
+                        (0, 2, 3),  # R3:  NL & P -> ZE: below target, receding  -> stop
+                        (1, 0, 3),  # R4:  NS & N -> ZE
+                        (1, 1, 3),  # R5:  NS & Z -> ZE
+                        (1, 2, 3),  # R6:  NS & P -> ZE
+                        (2, 0, 3),  # R7:  ZE & N -> ZE: at target, closing      -> stop
+                        (2, 1, 3),  # R8:  ZE & Z -> ZE: at target, stable       -> stop
+                        (2, 2, 4),  # R9:  ZE & P -> PS: at target, receding     -> creep
+                        (3, 0, 3),  # R10: PS & N -> ZE: slightly clear, closing -> stop
+                        (3, 1, 4),  # R11: PS & Z -> PS: slightly clear, stable  -> slow
+                        (3, 2, 5),  # R12: PS & P -> PM: slightly clear, receding-> medium
+                        (4, 0, 4),  # R13: PL & N -> PS: very clear, closing     -> slow
+                        (4, 1, 6),  # R14: PL & Z -> PL: very clear, stable      -> full
+                        (4, 2, 6),  # R15: PL & P -> PL: very clear, receding    -> full
+                    ],
             }
     else:
         raise ValueError("Unknown algorithm: "+algorithm)
@@ -366,7 +387,7 @@ class FuzzyPIAlgorithm(Algorithm):
     def reset(self):
         self.integral=0.0
         
-class AbsoluteFuzzy(Algorithm):
+class FuzzyRuleBased(Algorithm):
     def __init__(self, configuration):
         self.smallDisturbance=configuration["SmallDisturbance"]
         self.mediumDisturbance=configuration["MediumDisturbance"]
@@ -519,9 +540,8 @@ class AbsoluteFuzzy(Algorithm):
         
     def reset(self):
         self.previousDisturbance=0.0
-        self.firstCall = True
+        self.firstCall=True
         self.lastActiveRules=[]
-        self.previousActiveRules=[]
            
 class SensorData:
     def __init__(self, configuration, **kwargs):
@@ -685,7 +705,7 @@ class LaneKeepingController(Controller):
         if rightValue<self.crossingThreshold and leftValue>=self.crossingThreshold:
             return self.emergencySpeed, -self.emergencyTurnSpeed
         
-        if abs(difference)<=self.minDifference:
+        if abs(difference)<=self.minDifference and isinstance(self.algorithm, (PIDAlgorithm, FuzzyPIAlgorithm)):
             return self.baseSpeed, 0
         
         disturbance, turnRate=self.algorithm.compute(0, difference, dt)
@@ -696,8 +716,8 @@ class LaneKeepingController(Controller):
     def run(self):
         if isinstance(self.algorithm, FuzzyPIAlgorithm):    
             algorithm="FuzzyPI"
-        elif isinstance(self.algorithm, AbsoluteFuzzy):
-            algorithm="AbsoluteFuzzy"
+        elif isinstance(self.algorithm, FuzzyRuleBased):
+            algorithm="FuzzyRuleBased"
         elif isinstance(self.algorithm, FuzzyStateMachine):
             algorithm="FuzzyAutomata"
         else:
@@ -718,7 +738,7 @@ class LaneKeepingController(Controller):
                 
                 if step%self.logInterval==0:
                     print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue))
-                    if isinstance(self.algorithm, AbsoluteFuzzy):
+                    if isinstance(self.algorithm, FuzzyRuleBased):
                         print(self.algorithm.logRules())
                 
                 leftOnBlack=leftValue<self.blackThreshold
@@ -757,178 +777,143 @@ class LaneKeepingController(Controller):
 class MazeSolverController(Controller):
     def __init__(self, algorithm, configuration, streamer, ev3, robot):
         super().__init__(algorithm, configuration, streamer, ev3, robot)
-        self.ev3=ev3
-        self.robot=robot
         self.forwardSensor=UltrasonicSensor(configuration["ForwardUltrasonicSensor"])
-        self.leftSensor=UltrasonicSensor(configuration["LeftUltrasonicSensor"])
-        self.distanceThresholdLow=configuration["DistanceThresholdLow"]
-        self.distanceThresholdHigh=configuration["DistanceThresholdHigh"]
-        self.targetWallDistance=configuration["TargetWallDistance"]
+        self.leftSensor=UltrasonicSensor(configuration["LeftUltrasonicSensor"])  # Phase 2
+        self.sensorMotor=Motor(configuration["SensorMotor"])
+        self.targetForwardDistance=configuration["TargetForwardDistance"]
         self.baseSpeed=configuration["BaseSpeed"]
-        self.slowSpeed=configuration["SlowSpeed"]
-        self.minForwardDistance=configuration["MinForwardDistance"]
         self.obstacleThreshold=configuration["ObstacleThreshold"]
-        self.openPassageThreshold=configuration["OpenPassageThreshold"]
-        self.peekAngle=configuration["PeekAngle"]
+        self.minForwardDistance=configuration["MinForwardDistance"]
+        self.turnAngle=configuration["TurnAngle"]
+        self.curveSpeed=configuration["CurveSpeed"]
+        self.curveTurnRate=configuration["CurveTurnRate"]
         self.logInterval=configuration["LogInterval"]
         self.forwardHistory=[0, 0, 0, 0, 0]
-        self.leftHistory=[0, 0, 0, 0, 0]
 
-    def filterReadings(self, history, newReading):
-        # Shift window and insert new sample
-        history[0]=history[1]
-        history[1]=history[2]
-        history[2]=history[3]
-        history[3]=history[4]
-        history[4]=newReading
-
-        # Median of 5: sorts a copy, returns the middle value.
-        # Robust against single-sample cross-talk spikes (double-bounce echoes).
-        s=sorted(history)
+    def filterForward(self, newReading):
+        self.forwardHistory[0]=self.forwardHistory[1]
+        self.forwardHistory[1]=self.forwardHistory[2]
+        self.forwardHistory[2]=self.forwardHistory[3]
+        self.forwardHistory[3]=self.forwardHistory[4]
+        self.forwardHistory[4]=newReading
+        s=sorted(self.forwardHistory)
         return s[2]
 
-    def flushSensors(self):
+    def flushForward(self):
         wait(50)
+        live=self.forwardSensor.distance()
+        self.forwardHistory=[live, live, live, live, live]
 
-        forwardLive=self.forwardSensor.distance()
-        leftLive=self.leftSensor.distance()
-        self.forwardHistory=[forwardLive, forwardLive, forwardLive, forwardLive, forwardLive]
-        self.leftHistory=[leftLive, leftLive, leftLive, leftLive, leftLive]
-    
-    def readSensors(self):
-        forwardRaw=self.forwardSensor.distance()
-        leftRaw=self.leftSensor.distance()
-        
-        forwardFiltered=self.filterReadings(self.forwardHistory, forwardRaw)
-        leftFiltered=self.filterReadings(self.leftHistory, leftRaw)
-        
-        return forwardFiltered, leftFiltered
-    
+    def readForward(self):
+        return self.filterForward(self.forwardSensor.distance())
+
+    def scanForward(self):
+        """Median of 3 raw samples — used during sensor-motor sweeps."""
+        readings=[self.forwardSensor.distance(),
+                  self.forwardSensor.distance(),
+                  self.forwardSensor.distance()]
+        readings.sort()
+        return readings[1]
+
     def printHeader(self, algorithm):
         self.ev3.speaker.beep()
-        print("\nMAZE SOLVER-"+algorithm+"\n")
-        print("Target Wall Distance:"+ str(self.targetWallDistance))
-        print("Base Speed:"+ str(self.baseSpeed))
-        print("Obstacle Threshold:"+ str(self.obstacleThreshold))
-        
-    def peekAndTurn(self, targetAngle, reason):
-        print("Peek and Turn: "+reason)
-        
-        if targetAngle>0:
-            stepAngle=self.peekAngle
-        else:
-            stepAngle=-self.peekAngle
-        
-        totalTurned=0
-        turnsMade=0
-        
-        while abs(totalTurned)<abs(targetAngle):
-            self.robot.turn(stepAngle)
-            totalTurned+=stepAngle
-            turnsMade+=1
-            self.flushSensors()
-            
-            print("Peek "+str(turnsMade)+": "+str(abs(totalTurned))+"° turned")
-            
-            forward, left=self.readSensors()
-            print("Forward: "+str(int(forward))+" mm --- Left: "+str(int(left))+" mm")
-            
-            if forward>self.minForwardDistance:
-                print("Clear Path after "+str(abs(totalTurned))+"°")
-                break
-            
-            if abs(totalTurned)>=abs(targetAngle):
-                print("Full "+str(abs(targetAngle))+"° turn complete")
-                break
-            
-        return totalTurned
-    
-    def handleObstacle(self, forward, left):
-        print("\n OBSTACLE: Fwd=" + str(int(forward)) + "mm --- Left=" + str(int(left)) + "mm")
+        print("\nMAZE SOLVER-"+algorithm)
+        print("Target forward dist: "+str(self.targetForwardDistance)+"mm")
+        print("Obstacle threshold:  "+str(self.obstacleThreshold)+"mm")
+        print("Base speed:          "+str(self.baseSpeed)+"mm/s\n")
+
+    def scanDirections(self):
+        """
+        Rotate the sensor motor to +90 deg (left) and -90 deg (right),
+        read the forward sensor at each position, return (leftBlocked, rightBlocked).
+        Sensor motor returns to centre before this method exits.
+        """
+        SCAN_SPEED=200
+
+        self.sensorMotor.run_target(SCAN_SPEED, -90)
+        wait(300)
+        leftDist=self.scanForward()
+        leftBlocked=leftDist<self.minForwardDistance
+        print("Scan LEFT:  "+str(int(leftDist))+"mm -> "+("BLOCKED" if leftBlocked else "CLEAR"))
+
+        self.sensorMotor.run_target(SCAN_SPEED, 90)
+        wait(300)
+        rightDist=self.scanForward()
+        rightBlocked=rightDist<self.minForwardDistance
+        print("Scan RIGHT: "+str(int(rightDist))+"mm -> "+("BLOCKED" if rightBlocked else "CLEAR"))
+
+        self.sensorMotor.run_target(SCAN_SPEED, 0)
+        wait(300)
+
+        return leftBlocked, rightBlocked
+
+    def handleObstacle(self, forward):
+        print("\nOBSTACLE: Fwd="+str(int(forward))+"mm - scanning directions")
         self.robot.stop()
-        wait(200)
-        self.algorithm.reset()
-        
-        forward, left=self.readSensors()
-        
-        if left>self.openPassageThreshold:
-            print("Decision: Left CLEAR - turning left")
-            self.peekAndTurn(-90, "Left passage detected")
-            return
-        
-        if forward>self.minForwardDistance:
-            print("Decision: Forward CLEAR - continuing straight")
-            return
-        
-        print("Decision: Front AND Left blocked - trying RIGHT")
-        self.robot.turn(90)
-        self.flushSensors()
-        
-        forward, _= self.readSensors()
-        
-        if forward>self.minForwardDistance:
-            print("Right turn successful")
-            return
+        wait(300)
+
+        leftBlocked, rightBlocked=self.scanDirections()
+
+        curveDuration=int(self.turnAngle / self.curveTurnRate * 1000)
+
+        if not leftBlocked:
+            print("Decision: LEFT clear - curving left")
+            self.robot.drive(self.curveSpeed, -self.curveTurnRate)
+            wait(curveDuration)
+        elif not rightBlocked:
+            print("Decision: RIGHT clear - curving right")
+            self.robot.drive(self.curveSpeed, self.curveTurnRate)
+            wait(curveDuration)
         else:
-            print("Still blocked, turn around")
-            self.robot.turn(90)
-            self.flushSensors()
-            
-    def handleOpenPassage(self, left):
-        print("\nOPEN PASSAGE: Left="+str(int(left))+" mm")
+            print("Decision: both blocked - point-turning around")
+            self.robot.turn(self.turnAngle*2)
+
         self.robot.stop()
-        wait(200)
+        self.flushForward()
         self.algorithm.reset()
-        self.peekAndTurn(-90, "Left passage detected")
-    
+
     def run(self):
-        if isinstance(self.algorithm, FuzzyPIAlgorithm):    
+        if isinstance(self.algorithm, FuzzyPIAlgorithm):
             algorithm="FuzzyPI"
-        elif isinstance(self.algorithm, AbsoluteFuzzy):
-            algorithm="AbsoluteFuzzy"
+        elif isinstance(self.algorithm, FuzzyRuleBased):
+            algorithm="FuzzyRuleBased"
         elif isinstance(self.algorithm, FuzzyStateMachine):
             algorithm="FuzzyAutomata"
         else:
             algorithm="PID"
-        
+
         self.printHeader(algorithm)
-        self.flushSensors()
-        
+        self.sensorMotor.reset_angle(0)
+        self.flushForward()
+
         lastTime=0.0
-        
+
         try:
             while True:
                 step, currentTime=self.nextStep()
                 dt=currentTime-lastTime
                 lastTime=currentTime
-                
-                forward, left=self.readSensors()
-                
+
+                forward=self.readForward()
+
                 if step%self.logInterval==0:
-                    print("Step "+str(step)+" Forward: "+str(int(forward))+" mm --- Left: "+str(int(left))+" mm")
-                    if isinstance(self.algorithm, AbsoluteFuzzy):
+                    print("Step "+str(step)+" Fwd="+str(int(forward))+"mm")
+                    if isinstance(self.algorithm, FuzzyRuleBased):
                         print(self.algorithm.logRules())
-                
+
                 if forward<self.obstacleThreshold:
-                    self.handleObstacle(forward, left)
-                    lastTime=self.now() 
-                    continue
-                
-                if left>self.openPassageThreshold:
-                    self.handleOpenPassage(left)
+                    self.handleObstacle(forward)
                     lastTime=self.now()
                     continue
-                
-                if forward<self.minForwardDistance:
-                    speed=self.slowSpeed
-                else:
-                    speed=self.baseSpeed
-                disturbance, turnRate=self.algorithm.compute(self.targetWallDistance, left, dt)
-                self.streamer.send(step, disturbance, turnRate)
 
-                self.robot.drive(speed, turnRate)
+                # input = forward distance; output = speed (always straight, no steering)
+                disturbance, speed=self.algorithm.compute(forward, self.targetForwardDistance, dt)
+                speed=max(30, speed)
+
+                self.streamer.send(step, disturbance, speed)
+                self.robot.drive(speed, 0)
                 wait(20)
-                
+
         except KeyboardInterrupt:
             self.robot.stop()
             self.ev3.speaker.beep()
@@ -946,8 +931,10 @@ def createController(task, algorithm_name):
         algorithm=PIDAlgorithm(configuration)
     elif algorithm_name=="FuzzyPI":
         algorithm=FuzzyPIAlgorithm(configuration)
-    elif algorithm_name=="AbsoluteFuzzy":
-        algorithm=AbsoluteFuzzy(configuration)
+    elif algorithm_name=="FuzzyRuleBased":
+        algorithm=FuzzyRuleBased(configuration)
+    elif algorithm_name=="FuzzyAutomata":
+        raise NotImplementedError("FuzzyAutomata requires states and transitions — build them before passing to createController")
 
 
     if task=="LaneKeeping":
