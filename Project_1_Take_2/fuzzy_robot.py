@@ -1,7 +1,7 @@
 #!/usr/bin/env pybricks-micropython
 
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor, UltrasonicSensor
+from pybricks.ev3devices import Motor, ColorSensor, UltrasonicSensor, GyroSensor
 from pybricks.parameters import Port
 from pybricks.tools import wait, StopWatch
 from pybricks.robotics import DriveBase
@@ -40,17 +40,24 @@ def initializeConfiguration(task, algorithm):
         }
     elif task == "MazeSolver":
         taskConfiguration={
-            "ForwardUltrasonicSensor": Port.S4,
-            "LeftUltrasonicSensor": Port.S1,
-            "SensorMotor": Port.B,
-            # Speed controller setpoint: at this distance output → 0, further → faster
-            "TargetForwardDistance": 150,
-            "BaseSpeed": 150,
-            "ObstacleThreshold": 100,   # stop + scan when forward < this
-            "MinForwardDistance": 200,  # minimum clear distance to accept a direction after scanning
-            "TurnAngle": 90,
-            "CurveSpeed": 80,       # forward speed (mm/s) during a curve turn
-            "CurveTurnRate": 45,    # heading rate (deg/s); 90 deg / 90 deg/s = 1 s per 90 deg
+            "ForwardUltrasonicSensor": Port.S4,   
+            "LeftUltrasonicSensor":    Port.S1,
+            "RightUltrasonicSensor":   Port.S2,   
+            "GyroSensor":              Port.S3,   
+            "SensorMotor":             Port.B,
+            "CellDistanceNS": 260,         
+            "CellDistanceEW": 280,         
+            "OpenPassageThreshold": 150,   
+            "ObstacleThreshold": 80,       
+            "TargetForwardDistance": 150,  
+            "BaseSpeed": 150,              
+            "MinSpeed": 30,                
+            "CurveSpeed": 80,
+            "CurveTurnRate": 15,
+            "BackupDistance": 60,
+            "HeadingThreshold": 3,         
+            "CenteringThreshold": 20,      
+            "CenteringGain": 0.1,         
             "LogInterval": 1,
         }
     else:
@@ -68,8 +75,6 @@ def initializeConfiguration(task, algorithm):
                 "IntegralMax": 1000.0,
             }
         elif task == "MazeSolver":
-            # disturbance = forward - TargetForwardDistance (mm); output = speed (mm/s)
-            # Kp*500mm ≈ 30mm/s → Kp=0.06; MinOutput=0 prevents reversing
             algorithmConfiguration={
                 "Kp": 0.06,
                 "Ki": 0.001,
@@ -140,12 +145,12 @@ def initializeConfiguration(task, algorithm):
                 # output indices: 0=NL  1=NM  2=NS  3=ZE  4=PS  5=PM  6=PL
                 
                 "Rules": [
-                        (0, 0, 6),  # R1:  NL & N  -> PL
+                        (0, 0, 5),  # R1:  NL & N  -> PM
                         (0, 1, 6),  # R2:  NL & Z  -> PL
-                        (0, 2, 5),  # R3:  NL & P  -> PM
-                        (1, 0, 5),  # R4:  NS & N  -> PM
+                        (0, 2, 6),  # R3:  NL & P  -> PL
+                        (1, 0, 4),  # R4:  NS & N  -> PS
                         (1, 1, 5),  # R5:  NS & Z  -> PM
-                        (1, 2, 4),  # R6:  NS & P  -> PS
+                        (1, 2, 5),  # R6:  NS & P  -> PM
                         (2, 0, 3),  # R7:  ZE & N  -> ZE
                         (2, 1, 3),  # R8:  ZE & Z  -> ZE
                         (2, 2, 3),  # R9:  ZE & P  -> ZE
@@ -639,6 +644,71 @@ class FuzzyStateMachine(Algorithm):
     def logMVs(self):
         return "  ".join(s.name + ":" + str(round(s.mv, 2)) for s in self.states)
                
+class MazeMap:
+    NORTH = 0
+    EAST  = 1
+    SOUTH = 2
+    WEST  = 3
+
+    DX      = (0,  1,  0, -1)         
+    DY      = (1,  0, -1,  0)          
+    TURN    = (0, 90, 180, -90)        
+    DFS     = (0,  3,  1,  2)          
+    BACKDIR = {(0,1):0, (1,0):1, (0,-1):2, (-1,0):3}
+
+    def __init__(self):
+        self.visited          = set()
+        self.path             = []      
+        self.x                = 0
+        self.y                = 0
+        self.heading          = 0       
+        self.expectedGyroAngle = 0      
+
+    def markVisited(self):
+        self.visited.add((self.x, self.y))
+
+    def gyroTarget(self):
+        return self.expectedGyroAngle
+
+    def planMove(self, openAbsDirs):
+        for step in self.DFS:
+            absDir=(self.heading + step) % 4
+            
+            if absDir not in openAbsDirs:
+                continue
+            
+            nx=self.x + self.DX[absDir]
+            ny=self.y + self.DY[absDir]
+            
+            if (nx, ny) not in self.visited:
+                return absDir, self.TURN[step]
+            
+        return None, None
+    
+    def planBacktrack(self):
+        if not self.path:
+            return None, None
+        
+        px, py=self.path[-1]
+        backDir=self.BACKDIR[(px-self.x, py-self.y)]
+        step=(backDir - self.heading) % 4
+        
+        return self.TURN[step], backDir  
+
+    def applyTurn(self, absDir):
+        step = (absDir - self.heading) % 4
+        self.expectedGyroAngle += self.TURN[step]   
+        self.heading = absDir
+        
+    def commitMove(self):
+        self.path.append((self.x, self.y))
+        self.x+=self.DX[self.heading]
+        self.y+=self.DY[self.heading]
+        self.markVisited()
+    
+    def commitBacktrack(self):
+        self.x, self.y=self.path.pop()     
+
 def hardware_setup(configuration):
     ev3=EV3Brick()
     leftMotor=Motor(configuration["LeftMotor"])
@@ -777,147 +847,201 @@ class LaneKeepingController(Controller):
 class MazeSolverController(Controller):
     def __init__(self, algorithm, configuration, streamer, ev3, robot):
         super().__init__(algorithm, configuration, streamer, ev3, robot)
-        self.forwardSensor=UltrasonicSensor(configuration["ForwardUltrasonicSensor"])
-        self.leftSensor=UltrasonicSensor(configuration["LeftUltrasonicSensor"])  # Phase 2
-        self.sensorMotor=Motor(configuration["SensorMotor"])
-        self.targetForwardDistance=configuration["TargetForwardDistance"]
-        self.baseSpeed=configuration["BaseSpeed"]
-        self.obstacleThreshold=configuration["ObstacleThreshold"]
-        self.minForwardDistance=configuration["MinForwardDistance"]
-        self.turnAngle=configuration["TurnAngle"]
-        self.curveSpeed=configuration["CurveSpeed"]
-        self.curveTurnRate=configuration["CurveTurnRate"]
-        self.logInterval=configuration["LogInterval"]
-        self.forwardHistory=[0, 0, 0, 0, 0]
-
-    def filterForward(self, newReading):
-        self.forwardHistory[0]=self.forwardHistory[1]
-        self.forwardHistory[1]=self.forwardHistory[2]
-        self.forwardHistory[2]=self.forwardHistory[3]
-        self.forwardHistory[3]=self.forwardHistory[4]
-        self.forwardHistory[4]=newReading
-        s=sorted(self.forwardHistory)
-        return s[2]
-
-    def flushForward(self):
-        wait(50)
-        live=self.forwardSensor.distance()
-        self.forwardHistory=[live, live, live, live, live]
-
-    def readForward(self):
-        return self.filterForward(self.forwardSensor.distance())
+        self.forwardSensor      = UltrasonicSensor(configuration["ForwardUltrasonicSensor"])
+        self.leftSensor         = UltrasonicSensor(configuration["LeftUltrasonicSensor"])
+        self.rightSensor        = UltrasonicSensor(configuration["RightUltrasonicSensor"])
+        self.gyro               = GyroSensor(configuration["GyroSensor"])
+        self.sensorMotor        = Motor(configuration["SensorMotor"])
+        self.cellDistanceNS     = configuration["CellDistanceNS"]
+        self.cellDistanceEW     = configuration["CellDistanceEW"]
+        self.openPassage            = configuration["OpenPassageThreshold"]
+        self.obstacleThreshold      = configuration["ObstacleThreshold"]
+        self.targetForwardDistance  = configuration["TargetForwardDistance"]
+        self.baseSpeed              = configuration["BaseSpeed"]
+        self.minSpeed               = configuration["MinSpeed"]
+        self.curveSpeed             = configuration["CurveSpeed"]
+        self.curveTurnRate      = configuration["CurveTurnRate"]
+        self.backupDistance     = configuration["BackupDistance"]
+        self.headingThreshold   = configuration["HeadingThreshold"]
+        self.centeringThreshold = configuration["CenteringThreshold"]
+        self.centeringGain      = configuration["CenteringGain"]
+        self.logInterval        = configuration["LogInterval"]
+        self.mazeMap            = MazeMap()
 
     def scanForward(self):
-        """Median of 3 raw samples — used during sensor-motor sweeps."""
-        readings=[self.forwardSensor.distance(),
-                  self.forwardSensor.distance(),
-                  self.forwardSensor.distance()]
-        readings.sort()
-        return readings[1]
+        r0 = self.forwardSensor.distance()
+        wait(10)
+        r1 = self.forwardSensor.distance()
+        wait(10)
+        r2 = self.forwardSensor.distance()
+        r = [r0, r1, r2]
+        r.sort()
+        return r[1]
+
+    def scanJunction(self):
+        openDirs = set()
+        h=self.mazeMap.heading
+        
+        if self.scanForward()>=self.openPassage:
+            openDirs.add(h)
+        if self.leftSensor.distance()>=self.openPassage:
+            openDirs.add((h+3) % 4)
+        if self.rightSensor.distance()>=self.openPassage:
+            openDirs.add((h+1) % 4)
+            
+        return openDirs
+
+    def alignHeading(self):
+        target     = self.mazeMap.gyroTarget()
+        error      = target - self.gyro.angle()
+        correction = (error + 180) % 360 - 180  
+        if abs(correction) > self.headingThreshold:
+            self.robot.turn(correction)
+            wait(200)
+            
+    def centerInCorridor(self):
+        left=self.leftSensor.distance()
+        right=self.rightSensor.distance()
+        difference=left-right
+        
+        if left<self.openPassage and right<self.openPassage and abs(difference)>self.centeringThreshold:
+            correction=difference*self.centeringGain
+            
+            if correction>15.0:
+                correction=15.0
+            if correction<-15.0:
+                correction=-15.0
+            
+            self.robot.turn(correction)
+            wait(100)
+                
+    def cellDist(self, absDir):
+        if absDir%2==0:
+            return self.cellDistanceNS
+        else:
+            return self.cellDistanceEW
+        
+    def executeTurn(self, degreeTurn):
+        if degreeTurn == 0:
+            return
+        if abs(degreeTurn) == 90:
+            startAngle  = self.gyro.angle()
+            targetAngle = startAngle + degreeTurn  
+            turnRate    = self.curveTurnRate if degreeTurn > 0 else -self.curveTurnRate
+            deadline    = self.now() + 5.0          
+            self.robot.drive(self.curveSpeed, turnRate)
+            if degreeTurn > 0:
+                while self.gyro.angle() < targetAngle and self.now() < deadline:
+                    wait(5)
+            else:
+                while self.gyro.angle() > targetAngle and self.now() < deadline:
+                    wait(5)
+            self.robot.stop()
+        else:                       
+            self.robot.turn(degreeTurn)
+        
+    def _driveCell(self, absDir):
+        cellTarget = self.cellDist(absDir)
+        travelDist = 0.0
+        prevSpeed  = 0.0
+        lastTime   = self.now()
+        self.algorithm.reset()
+        wait(20)
+
+        while travelDist < cellTarget:
+            currentTime = self.now()
+            dt          = currentTime - lastTime
+            lastTime    = currentTime
+
+            forward = self.scanForward()
+
+            if forward < self.obstacleThreshold:
+                break
+
+            disturbance, speed = self.algorithm.compute(forward, self.targetForwardDistance, dt)
+            if speed < self.minSpeed:
+                speed = self.minSpeed
+            if speed > self.baseSpeed:
+                speed = self.baseSpeed
+            self.robot.drive(speed, 0)
+
+            travelDist += 0.5 * (prevSpeed + speed) * dt
+            prevSpeed   = speed
+
+            self.nextStep()
+            self.streamer.send(self.step, disturbance, speed)
+            wait(20)
+
+        self.robot.stop()
 
     def printHeader(self, algorithm):
         self.ev3.speaker.beep()
-        print("\nMAZE SOLVER-"+algorithm)
-        print("Target forward dist: "+str(self.targetForwardDistance)+"mm")
-        print("Obstacle threshold:  "+str(self.obstacleThreshold)+"mm")
-        print("Base speed:          "+str(self.baseSpeed)+"mm/s\n")
-
-    def scanDirections(self):
-        """
-        Rotate the sensor motor to +90 deg (left) and -90 deg (right),
-        read the forward sensor at each position, return (leftBlocked, rightBlocked).
-        Sensor motor returns to centre before this method exits.
-        """
-        SCAN_SPEED=200
-
-        self.sensorMotor.run_target(SCAN_SPEED, -90)
-        wait(300)
-        leftDist=self.scanForward()
-        leftBlocked=leftDist<self.minForwardDistance
-        print("Scan LEFT:  "+str(int(leftDist))+"mm -> "+("BLOCKED" if leftBlocked else "CLEAR"))
-
-        self.sensorMotor.run_target(SCAN_SPEED, 90)
-        wait(300)
-        rightDist=self.scanForward()
-        rightBlocked=rightDist<self.minForwardDistance
-        print("Scan RIGHT: "+str(int(rightDist))+"mm -> "+("BLOCKED" if rightBlocked else "CLEAR"))
-
-        self.sensorMotor.run_target(SCAN_SPEED, 0)
-        wait(300)
-
-        return leftBlocked, rightBlocked
-
-    def handleObstacle(self, forward):
-        print("\nOBSTACLE: Fwd="+str(int(forward))+"mm - scanning directions")
-        self.robot.stop()
-        wait(300)
-
-        leftBlocked, rightBlocked=self.scanDirections()
-
-        curveDuration=int(self.turnAngle / self.curveTurnRate * 1000)
-
-        if not leftBlocked:
-            print("Decision: LEFT clear - curving left")
-            self.robot.drive(self.curveSpeed, -self.curveTurnRate)
-            wait(curveDuration)
-        elif not rightBlocked:
-            print("Decision: RIGHT clear - curving right")
-            self.robot.drive(self.curveSpeed, self.curveTurnRate)
-            wait(curveDuration)
-        else:
-            print("Decision: both blocked - point-turning around")
-            self.robot.turn(self.turnAngle*2)
-
-        self.robot.stop()
-        self.flushForward()
-        self.algorithm.reset()
+        print("\nMAZE SOLVER DFS - "+algorithm)
+        print("Cell: "+str(self.cellDistanceEW)+"x"+str(self.cellDistanceNS)+"mm")
+        print("Open passage threshold: "+str(self.openPassage)+"mm\n")
 
     def run(self):
         if isinstance(self.algorithm, FuzzyPIAlgorithm):
-            algorithm="FuzzyPI"
+            algorithm = "FuzzyPI"
         elif isinstance(self.algorithm, FuzzyRuleBased):
-            algorithm="FuzzyRuleBased"
+            algorithm = "FuzzyRuleBased"
         elif isinstance(self.algorithm, FuzzyStateMachine):
-            algorithm="FuzzyAutomata"
+            algorithm = "FuzzyAutomata"
         else:
-            algorithm="PID"
+            algorithm = "PID"
 
         self.printHeader(algorithm)
         self.sensorMotor.reset_angle(0)
-        self.flushForward()
-
-        lastTime=0.0
+        self.gyro.reset_angle(0)
+        self.mazeMap.markVisited()
 
         try:
             while True:
-                step, currentTime=self.nextStep()
-                dt=currentTime-lastTime
-                lastTime=currentTime
+                openDirs=self.scanJunction()
+                print("Cell ("+str(self.mazeMap.x)+","+str(self.mazeMap.y)+")"+" H="+str(self.mazeMap.heading)+" Open="+str(openDirs))
+                
+                absDir, degreeTurn=self.mazeMap.planMove(openDirs)
+                
+                if absDir is None:
+                    degreeTurn, backDir = self.mazeMap.planBacktrack()
 
-                forward=self.readForward()
+                    if degreeTurn is None:
+                        print("Maze fully explored")
+                        self.ev3.speaker.beep()
+                        break
 
-                if step%self.logInterval==0:
-                    print("Step "+str(step)+" Fwd="+str(int(forward))+"mm")
-                    if isinstance(self.algorithm, FuzzyRuleBased):
-                        print(self.algorithm.logRules())
+                    print("Backtrack: turn "+str(degreeTurn)+" deg")
 
-                if forward<self.obstacleThreshold:
-                    self.handleObstacle(forward)
-                    lastTime=self.now()
-                    continue
+                    self.robot.straight(-self.backupDistance)
+                    wait(200)
+                    self.executeTurn(degreeTurn)
+                    wait(200)
+                    self.mazeMap.applyTurn(backDir)
+                    self.alignHeading()
+                    self.centerInCorridor()
+                    self._driveCell(backDir)
+                    self.mazeMap.commitBacktrack()
+                else:
+                    print("Move: dir="+str(absDir)+" turn="+str(degreeTurn)+" deg")
 
-                # input = forward distance; output = speed (always straight, no steering)
-                disturbance, speed=self.algorithm.compute(forward, self.targetForwardDistance, dt)
-                speed=max(30, speed)
-
-                self.streamer.send(step, disturbance, speed)
-                self.robot.drive(speed, 0)
-                wait(20)
-
+                    if degreeTurn != 0:
+                        self.robot.straight(-self.backupDistance)
+                        wait(200)
+                    self.executeTurn(degreeTurn)
+                    wait(200)
+                    self.mazeMap.applyTurn(absDir)
+                    self.alignHeading()
+                    self.centerInCorridor()
+                    self._driveCell(absDir)
+                    self.mazeMap.commitMove()
+                
+                self.nextStep()
+                self.streamer.send(self.step, float(self.mazeMap.x), float(self.mazeMap.y))
+                
         except KeyboardInterrupt:
             self.robot.stop()
             self.ev3.speaker.beep()
-            print("\nMAZE SOLVER STOPPED\n")
+            print("\nMAZE SOLVER STOPPED at ("+str(self.mazeMap.x)+","+str(self.mazeMap.y)+")\n")
         finally:
             self.streamer.close()
             
@@ -935,7 +1059,8 @@ def createController(task, algorithm_name):
         algorithm=FuzzyRuleBased(configuration)
     elif algorithm_name=="FuzzyAutomata":
         raise NotImplementedError("FuzzyAutomata requires states and transitions — build them before passing to createController")
-
+    else:
+        raise ValueError("Unknown algorithm: "+algorithm_name)
 
     if task=="LaneKeeping":
         return LaneKeepingController(algorithm, configuration, streamer, ev3, robot)
