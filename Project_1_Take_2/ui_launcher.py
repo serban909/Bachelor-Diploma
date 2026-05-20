@@ -1,25 +1,4 @@
-#!/usr/bin/env python3
-"""
-EV3 Robot Controller — UI Launcher
-====================================
-Provides a graphical interface to:
-  1. Choose Task      (Lane Keeping | Maze Solver)
-  2. Choose Algorithm (PID          | Fuzzy)
-  3. Open a live graph that auto-configures its labels from the EV3's
-     META packet (same mechanism used by plot_realtime.py)
-
-SOLID responsibilities
-  DataReceiver  – background UDP thread, owns all socket logic (S)
-  GraphWindow   – Toplevel with embedded matplotlib figure         (S)
-  LauncherApp   – main window, wires components, owns UI state     (S)
-  CONTROLLER_LABELS – open/closed label registry, extend without   (O)
-                      touching any other class
-
-Run:  python ui_launcher.py
-Then deploy fuzzy_robot.py to the EV3 and run it.
-"""
-
-import tkinter as tk
+import tkinter 
 from tkinter import ttk, font
 import socket
 import threading
@@ -29,629 +8,654 @@ from pathlib import Path
 from collections import deque
 
 import matplotlib
-matplotlib.use("TkAgg")                          # must be set before pyplot import
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+
+matplotlib.use("TkAgg")
+import matplotlib.pyplot 
+import matplotlib.animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.patches import Rectangle
+from matplotlib.lines import Line2D
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONSTANTS
-# ─────────────────────────────────────────────────────────────────────────────
-LISTEN_PORT = 5005
-MAX_POINTS  = 500
-BUFFER_SIZE = 1024
+LISTEN_PORT=5005
+MAX_POINTS=500
+BUFFER_SIZE=1024
 
-# Human-readable display names – extend here without touching any other code
-_TASK_NAMES: dict[str, str] = {
+TASK_NAMES: dict[str, str]={
     "LaneKeeping": "Lane Keeping",
-    "MazeSolver":  "Maze Solver",
-}
-_ALGO_NAMES: dict[str, str] = {
-    "PID":          "PID",
-    "FuzzyPI":      "Fuzzy PI",
-    "AbsoluteFuzzy":"Absolute Fuzzy",
-    "FuzzyAutomata":"Fuzzy Automata",
+    "MazeSolver": "Maze Solver",
 }
 
-def _make_labels(task: str, algorithm: str) -> tuple[str, str, str]:
-    """Build (title, error_label, output_label) from task + algorithm keys."""
-    task_name = _TASK_NAMES.get(task, task)
-    algo_name = _ALGO_NAMES.get(algorithm, algorithm)
-    title = f"{task_name}  —  {algo_name}"
+ALGORITHM_NAMES: dict[str, str]={
+    "PID": "PID",
+    "FuzzyPI": "Fuzzy PI",
+    "FuzzyRuleBased": "Fuzzy Rule-Based",
+    "FuzzyAutomata": "Fuzzy Automata",
+}
+
+def makeLabels(task: str, algorithm: str)->tuple[str, str, str]:
+    taskName=TASK_NAMES.get(task, task)
+    algorithmName=ALGORITHM_NAMES.get(algorithm, algorithm)
+    title=f"{taskName} - {algorithmName}"
+    
     if task == "LaneKeeping":
-        err_lbl = "Error  (sensor difference)"
-        out_lbl = f"{algo_name} output  (turn rate  deg/s)"
+        inLabel="Disturbance (sensor difference)"
+        outLabel=f"{algorithmName} output (turn rate deg/s)"
     else:
-        err_lbl = "Error  (target − measured wall dist  mm)"
-        out_lbl = f"{algo_name} output  (steering  deg/s)"
-    return title, err_lbl, out_lbl
+        inLabel="Disturbance (target - measured wall distance mm)"
+        outLabel=f"{algorithmName} output (speed mm/s)"
+        
+    return title, inLabel, outLabel
 
-# Colour palette
-CLR_BG          = "#1e1e2e"
-CLR_SURFACE     = "#2a2a3e"
-CLR_BORDER      = "#44475a"
-CLR_TEXT        = "#cdd6f4"
-CLR_SUBTEXT     = "#a6adc8"
-CLR_BTN_ACTIVE  = "#89b4fa"   # blue – selected option
-CLR_BTN_IDLE    = "#313244"   # unselected option
-CLR_GREEN       = "#a6e3a1"
-CLR_YELLOW      = "#f9e2af"
-CLR_RED         = "#f38ba8"
+COLOUR_BACKGROUND  = "#1e1e2e"
+COLOUR_SURFACE     = "#2a2a3e"
+COLOUR_BORDER      = "#44475a"
+COLOUR_TEXT        = "#cdd6f4"
+COLOUR_SUBTEXT     = "#a6adc8"
+COLOUR_BUTTON_ACTIVE  = "#89b4fa"   
+COLOUR_BUTTON_IDLE    = "#313244"   
+COLOUR_GREEN       = "#a6e3a1"
+COLOUR_YELLOW      = "#f9e2af"
+COLOUR_RED         = "#f38ba8"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DATA RECEIVER  (Single Responsibility: background UDP intake)
-# ─────────────────────────────────────────────────────────────────────────────
 class DataReceiver:
-    """
-    Listens on a UDP socket in a daemon thread.
-    Fills thread-safe deques consumed by the graph window.
-    Notifies observers via callbacks instead of sharing state directly.
-    """
+    def __init__(self, port:int, maxPoints:int):
+        self.steps=deque(maxlen=maxPoints)
+        self.disturbances=deque(maxlen=maxPoints)
+        self.outputs=deque(maxlen=maxPoints)
+        self.cells={}
+        self.currentPosition=(0, 0)
+        
+        self.port=port
+        self.socket=None
+        self.thread=None
+        self.running=False
+        self.connected=False
+        self._onConnect=None
+        self._onMeta=None
 
-    def __init__(self, port: int, max_points: int):
-        self.steps   = deque(maxlen=max_points)
-        self.errors  = deque(maxlen=max_points)
-        self.outputs = deque(maxlen=max_points)
+    def onConnect(self, callback):
+        self._onConnect=callback
 
-        self._port          = port
-        self._sock          = None
-        self._thread        = None
-        self._running       = False
-        self._connected     = False  # reset by clear() so each run fires on_connect
-        self._on_connect    = None   # callback(ip: str)
-        self._on_meta       = None   # callback(label: str)
-
-    # ── Observer registration ─────────────────────────────────────────────
-    def on_connect(self, callback):
-        """Register a callback fired once when the first data packet arrives."""
-        self._on_connect = callback
-
-    def on_meta(self, callback):
-        """Register a callback fired when a META identification packet arrives."""
-        self._on_meta = callback
-
-    # ── Lifecycle ─────────────────────────────────────────────────────────
+    def onMeta(self, callback):
+        self._onMeta=callback
+        
     def start(self):
-        """Bind the socket and start the background thread."""
-        try:
-            self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._sock.bind(("0.0.0.0", self._port))
-            self._sock.settimeout(0.1)
-        except OSError as exc:
-            raise RuntimeError(f"Cannot bind port {self._port}: {exc}") from exc
-
-        self._running = True
-        self._thread  = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
-
+        try: 
+            self.socket=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket.bind(("0.0.0.0", self.port))
+            self.socket.settimeout(0.1)
+        except OSError:
+            raise RuntimeError (f"Cannot bind port {self.port}")
+        
+        self.running=True
+        self.thread=threading.Thread(target=self.loop, daemon=True)
+        self.thread.start()
+        
     def stop(self):
-        """Signal the thread to stop and release the socket."""
-        self._running = False
-        if self._sock:
-            self._sock.close()
-            self._sock = None
-
+        self.running=False
+        if self.socket:
+            self.socket.close()
+            self.socket=None
+            
     def clear(self):
-        """Discard all buffered data and reset connection state for a new run."""
         self.steps.clear()
-        self.errors.clear()
+        self.disturbances.clear()
         self.outputs.clear()
-        self._connected = False
-
-    # ── Internal loop (daemon thread) ─────────────────────────────────────
-    def _loop(self):
-        while self._running:
+        self.connected=False
+        self.cells.clear()
+        self.currentPosition=(0, 0)
+        
+    def loop(self):
+        while self.running:
             try:
-                raw, addr = self._sock.recvfrom(BUFFER_SIZE)
-                message   = raw.decode().strip()
-
+                raw, address=self.socket.recvfrom(BUFFER_SIZE)
+                message=raw.decode().strip()
+                
                 if message.startswith("META,"):
-                    _, label = message.split(",", 1)
-                    if self._on_meta:
-                        self._on_meta(label.strip())
+                    _, label=message.split(",", 1)
+                    if self._onMeta:
+                        self._onMeta(label.strip())
                     continue
 
-                parts = message.split(",")
-                if len(parts) == 3:
+                if message.startswith("CELL,"):
+                    parts=message.split(",")
+                    if len(parts)==4:
+                        x, y, walls = int(parts[1]), int(parts[2]), int(parts[3])
+                        self.cells[(x, y)] = walls
+                        self.currentPosition = (x, y)
+                    continue
+
+                parts=message.split(",")
+                if len(parts)==3:
                     self.steps.append(int(parts[0]))
-                    self.errors.append(float(parts[1]))
+                    self.disturbances.append(float(parts[1]))
                     self.outputs.append(float(parts[2]))
 
-                    if not self._connected:
-                        self._connected = True
-                        if self._on_connect:
-                            self._on_connect(addr[0])
-
+                    if not self.connected:
+                        self.connected=True
+                        if self._onConnect:
+                            self._onConnect(address[0])
+                            
             except socket.timeout:
                 pass
             except (OSError, ValueError):
-                pass  # socket closed or malformed packet – keep going
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# GRAPH WINDOW  (Single Responsibility: matplotlib visualisation only)
-# ─────────────────────────────────────────────────────────────────────────────
-class GraphWindow(tk.Toplevel):
-    """
-    A Toplevel window that embeds a live matplotlib figure.
-    Receives a DataReceiver it reads from – separation of concerns.
-    Labels are set immediately from the UI selection; the META packet
-    can also update them at runtime via update_labels().
-    """
-
-    def __init__(self, parent, receiver: DataReceiver, task: str, algorithm: str,
-                 on_close=None):
+                pass
+            
+class GraphWindow(tkinter.Toplevel):
+    def __init__(self, parent, receiver: DataReceiver, task: str, algorithm: str, onClose=None):
         super().__init__(parent)
-        self.title("Live Controller Graph")
-        self.configure(bg=CLR_BG)
+        self.title("Start the Robot")
+        self.configure(background=COLOUR_BACKGROUND)
         self.geometry("950x580")
         self.resizable(True, True)
-
-        self._receiver    = receiver
-        self._ani         = None
-        self._on_close_cb = on_close
-
-        self._build_figure(task, algorithm)
-        self._build_status_bar()
-        self._start_animation()
-
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
-
-    # ── Private builders ──────────────────────────────────────────────────
-    def _build_figure(self, task: str, algorithm: str):
-        title, err_lbl, out_lbl = _make_labels(task, algorithm)
-
-        self._fig, self._ax = plt.subplots(figsize=(10, 5))
-        self._fig.patch.set_facecolor("#1e1e2e")
-        self._ax.set_facecolor("#2a2a3e")
-
-        self._line_error,  = self._ax.plot(
-            [], [], color="#f38ba8", linewidth=2, label=err_lbl
+        self.receiver=receiver
+        self.ani=None
+        self.onCloseCallBack=onClose
+        self.task=task
+        
+        if task == "MazeSolver":
+            self.title("Live Maze Map")
+            self.geometry("780x780")
+            self.buildMazeFigure()
+        else:
+            self.buildFigure(task, algorithm)
+        self.buildStatusBar()
+        self.startAnimation()
+        
+        self.protocol("WM_DELETE_WINDOW", self.onClose)
+        
+    def buildFigure(self, task: str, algorithm: str):
+        title, inLabel, outLabel=makeLabels(task, algorithm)
+        
+        self.figure, self.axis=matplotlib.pyplot.subplots(figsize=(10, 5))
+        self.figure.patch.set_facecolor("#1e1e2e")
+        self.axis.set_facecolor("#2a2a3e")
+        
+        self.lineDisturbance, = self.axis.plot(
+            [], [], color="#f38ba8", linewidth=2, label=inLabel
         )
-        self._line_output, = self._ax.plot(
-            [], [], color="#89b4fa", linewidth=2, label=out_lbl
+        
+        self.lineOutput, = self.axis.plot(
+            [], [], color="#89b4fa", linewidth=2, label=outLabel
         )
+        
+        self.axis.set_xlabel("Step", color=COLOUR_TEXT, fontsize=11, fontweight="bold")
+        self.axis.set_ylabel("Value", color=COLOUR_TEXT, fontsize=11, fontweight="bold")
+        self.axis.set_title(title, color=COLOUR_TEXT, fontsize=11, fontweight="bold")
+        self.axis.tick_params(colors=COLOUR_SUBTEXT)
+        self.axis.spines[:].set_color(COLOUR_BORDER)
+        self.axis.set_xlim(0, 100)
+        self.axis.set_ylim(-250, 250)
+        self.axis.grid(True, alpha=0.2, linestyle="--", color=COLOUR_BORDER)
 
-        self._ax.set_xlabel("Step",  color=CLR_TEXT, fontsize=11, fontweight="bold")
-        self._ax.set_ylabel("Value", color=CLR_TEXT, fontsize=11, fontweight="bold")
-        self._ax.set_title(title,    color=CLR_TEXT, fontsize=13, fontweight="bold")
-        self._ax.tick_params(colors=CLR_SUBTEXT)
-        self._ax.spines[:].set_color(CLR_BORDER)
-        self._ax.set_xlim(0, 100)
-        self._ax.set_ylim(-250, 250)
-        self._ax.grid(True, alpha=0.2, linestyle="--", color=CLR_BORDER)
-
-        legend = self._ax.legend(
+        legend = self.axis.legend(
             loc="upper right", fontsize=9,
-            facecolor=CLR_SURFACE, edgecolor=CLR_BORDER,
-            labelcolor=CLR_TEXT,
+            facecolor=COLOUR_SURFACE, edgecolor=COLOUR_BORDER,
+            labelcolor=COLOUR_TEXT,
         )
 
-        self._canvas = FigureCanvasTkAgg(self._fig, master=self)
-        self._canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
+        self.canvas.get_tk_widget().pack(fill=tkinter.BOTH, expand=True, padx=8, pady=8)
 
-    def _build_status_bar(self):
-        bar = tk.Frame(self, bg=CLR_SURFACE, height=28)
-        bar.pack(fill=tk.X, side=tk.BOTTOM)
-
-        self._status_dot = tk.Label(
-            bar, text="●", fg=CLR_YELLOW, bg=CLR_SURFACE, font=("Segoe UI", 10)
-        )
-        self._status_dot.pack(side=tk.LEFT, padx=(8, 2))
-
-        self._status_lbl = tk.Label(
-            bar, text="Waiting for EV3 data…",
-            fg=CLR_SUBTEXT, bg=CLR_SURFACE, font=("Segoe UI", 9)
-        )
-        self._status_lbl.pack(side=tk.LEFT)
-
-        self._points_lbl = tk.Label(
-            bar, text="", fg=CLR_SUBTEXT, bg=CLR_SURFACE, font=("Segoe UI", 9)
-        )
-        self._points_lbl.pack(side=tk.RIGHT, padx=8)
-
-    # ── Public API ────────────────────────────────────────────────────────
-    def update_labels(self, task: str, algorithm: str):
-        """Called by LauncherApp when a META packet arrives."""
-        title, err_lbl, out_lbl = _make_labels(task, algorithm)
-        self._ax.set_title(title, color=CLR_TEXT, fontsize=13, fontweight="bold")
-        self._line_error.set_label(err_lbl)
-        self._line_output.set_label(out_lbl)
-        self._ax.legend(
-            loc="upper right", fontsize=9,
-            facecolor=CLR_SURFACE, edgecolor=CLR_BORDER,
-            labelcolor=CLR_TEXT,
-        )
-
-    def set_status_connected(self, ip: str):
-        self._status_dot.config(fg=CLR_GREEN)
-        self._status_lbl.config(text=f"Connected  –  receiving from {ip}")
-
-    # ── Animation ─────────────────────────────────────────────────────────
-    def _start_animation(self):
-        self._ani = animation.FuncAnimation(
-            self._fig,
-            self._update_frame,
-            interval=50,          # 20 FPS
-            blit=True,
-            cache_frame_data=False,
-        )
-        self._canvas.draw()
-
-    def _update_frame(self, _frame):
-        # Snapshot the deques into plain lists before any iteration.
-        # The UDP thread appends to the deques concurrently; passing a live
-        # deque to Matplotlib's C internals risks "deque mutated during
-        # iteration" RuntimeError.  A list() copy is instantaneous and safe.
-        steps   = list(self._receiver.steps)
-        errors  = list(self._receiver.errors)
-        outputs = list(self._receiver.outputs)
-
+    def buildStatusBar(self):
+        bar=tkinter.Frame(self, bg=COLOUR_BORDER, height=30)
+        bar.pack(fill=tkinter.X, side=tkinter.BOTTOM)
+        
+        self.statusDot=tkinter.Label(bar, text="●", fg=COLOUR_YELLOW, bg=COLOUR_SURFACE, font=("Segoe UI", 10))
+        self.statusDot.pack(side=tkinter.LEFT, padx=(8, 2))
+        
+        self.statusLabel=tkinter.Label(bar, text="Waiting for robot connection...", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
+        self.statusLabel.pack(side=tkinter.LEFT)
+        self.pointsLabel=tkinter.Label(bar, text="", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
+        self.pointsLabel.pack(side=tkinter.RIGHT, padx=8)
+    
+    def buildMazeFigure(self):
+        self.figure, self.axis=matplotlib.pyplot.subplots(figsize=(7, 7))
+        self.figure.patch.set_facecolor(COLOUR_BACKGROUND)
+        self.axis.set_facecolor(COLOUR_SURFACE)
+        self.axis.set_aspect("equal")
+        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13)
+        self.axis.set_xlabel("X (East →)", color=COLOUR_TEXT, fontsize=10)
+        self.axis.set_ylabel("Y (North ↑)", color=COLOUR_TEXT, fontsize=10)
+        self.axis.tick_params(colors=COLOUR_SUBTEXT)
+        
+        for spine in self.axis.spines.values():
+            spine.set_color(COLOUR_BORDER)
+            
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
+        self.canvas.get_tk_widget().pack(fill=tkinter.BOTH, expand=True, padx=8, pady=8)
+    
+    def drawMazeCell(self, x, y, walls, isCurrent, isStart):
+        fill=COLOUR_BUTTON_ACTIVE if isCurrent else (COLOUR_GREEN if isStart else COLOUR_SURFACE)
+        self.axis.add_patch(Rectangle((x, y), 1, 1, facecolor=fill, edgecolor=COLOUR_BORDER, linewidth=1, zorder=1))
+        textColor=COLOUR_BACKGROUND if (isCurrent or isStart) else COLOUR_TEXT
+        self.axis.text(x+0.5, y+0.5, f"({x},{y})", color=textColor, fontsize=6, ha="center", va="center", zorder=3)
+        
+        W="#cdd6f4"
+        lw=2
+        
+        if not (walls & 1):  # North wall
+            self.axis.add_line(Line2D([x, x+1], [y+1, y+1], color=W, linewidth=lw, zorder=2))
+        if not (walls & 2):  # East wall
+            self.axis.add_line(Line2D([x+1, x+1], [y, y+1], color=W, linewidth=lw, zorder=2))
+        if not (walls & 4):  # South wall
+            self.axis.add_line(Line2D([x, x+1], [y, y], color=W, linewidth=lw, zorder=2))
+        if not (walls & 8):  # West wall
+            self.axis.add_line(Line2D([x, x], [y, y+1], color=W, linewidth=lw, zorder=2))
+    
+    def updateFrameMaze(self, _frame):
+        cells=dict(self.receiver.cells)
+        current=self.receiver.currentPosition
+        
+        if not cells:
+            return
+        
+        self.axis.cla()
+        self.axis.set_facecolor(COLOUR_SURFACE)
+        self.axis.set_aspect("equal")
+        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13, fontweight="bold")
+        self.axis.set_xlabel("X (East →)", color=COLOUR_TEXT, fontsize=10)
+        self.axis.set_ylabel("Y (North ↑)", color=COLOUR_TEXT, fontsize=10)
+        self.axis.tick_params(colors=COLOUR_SUBTEXT)
+        
+        for spine in self.axis.spines.values():
+            spine.set_color(COLOUR_BORDER)
+            
+        for (x, y), walls in cells.items():
+            self.drawMazeCell(x, y, walls, isCurrent=(current==(x,y)), isStart=(x==0 and y==0))
+            
+        xs=[cx for (cx, _) in cells]
+        ys=[cy for (_, cy) in cells]
+        margin=1.5
+        
+        self.axis.set_xlim(min(xs)-margin, max(xs)+margin+1)
+        self.axis.set_ylim(min(ys)-margin, max(ys)+margin+1)
+        self.pointsLabel.config(text=f"Cells: {len(cells)}")
+        
+    def updateLabels(self, task: str, algorithm: str):
+        title, inLabel, outLabel=makeLabels(task, algorithm)
+        self.axis.set_title(title, color=COLOUR_TEXT, fontsize=13, fontweight="bold")
+        if task != "MazeSolver":
+            self.lineDisturbance.set_label(inLabel)
+            self.lineOutput.set_label(outLabel)
+            self.axis.legend(
+                loc="upper right", fontsize=9,
+                facecolor=COLOUR_SURFACE, edgecolor=COLOUR_BORDER,
+                labelcolor=COLOUR_TEXT,
+            )
+    
+    def setStatusConnected(self, ip: str):
+        self.statusDot.config(fg=COLOUR_GREEN)
+        self.statusLabel.config(text=f"Connected to robot at {ip}")
+        
+    def startAnimation(self):
+        if self.task == "MazeSolver":
+            self.animation = matplotlib.animation.FuncAnimation(
+                self.figure,
+                self.updateFrameMaze,
+                interval=300,         # update every 0.3s
+                blit=False,
+                cache_frame_data=False,
+            )
+        else:
+            self.animation = matplotlib.animation.FuncAnimation(
+                self.figure,
+                self.updateFrame,
+                interval=50,          # 20 FPS
+                blit=True,
+                cache_frame_data=False,
+            )
+        self.canvas.draw()
+    
+    def updateFrame(self, _frame):
+        steps=list(self.receiver.steps)
+        disturbances=list(self.receiver.disturbances)
+        outputs=list(self.receiver.outputs)
+        
         if not steps:
-            return self._line_error, self._line_output
-
-        self._line_error.set_data(steps, errors)
-        self._line_output.set_data(steps, outputs)
-
-        # Auto-scale x
-        s_min, s_max = min(steps), max(steps)
-        x_margin     = max(1, (s_max - s_min) * 0.05)
-        self._ax.set_xlim(s_min - x_margin, s_max + x_margin)
-
-        # Auto-scale y (symmetric)
-        if errors and outputs:
-            peak     = max(abs(v) for v in errors + outputs)
-            y_margin = max(10, peak * 0.2)
-            self._ax.set_ylim(-peak - y_margin, peak + y_margin)
-
-        # Update point counter
-        self._points_lbl.config(text=f"Points: {len(steps)}")
-
-        return self._line_error, self._line_output
-
-    def _on_close(self):
-        if self._ani:
-            self._ani.event_source.stop()
-        plt.close(self._fig)
-        if self._on_close_cb:
-            self._on_close_cb()
+            return self.lineDisturbance, self.lineOutput
+        
+        self.lineDisturbance.set_data(steps, disturbances)
+        self.lineOutput.set_data(steps, outputs)
+        
+        sMin, sMax = min(steps), max(steps)
+        xMargin = max(1, (sMax - sMin) * 0.05)
+        self.axis.set_xlim(sMin - xMargin, sMax + xMargin)
+        
+        if disturbances and outputs:
+            peak=max(abs(value) for value in disturbances+outputs)
+            yMargin=max(10, peak * 0.2)
+            self.axis.set_ylim(-peak - yMargin, peak + yMargin)
+        
+        self.pointsLabel.config(text=f"Data points: {len(steps)}")
+        
+        return self.lineDisturbance, self.lineOutput
+    
+    def onClose(self):
+        if self.animation:
+            self.animation.event_source.stop()
+        matplotlib.pyplot.close(self.figure)
+        
+        if self.onCloseCallBack:
+            self.onCloseCallBack()
+        
         self.destroy()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# LAUNCHER APP  (wires DataReceiver + GraphWindow, owns UI state)
-# ─────────────────────────────────────────────────────────────────────────────
-class LauncherApp(tk.Tk):
-    """
-    Main application window.
-    Owns the UI state (task/algorithm selection) and the DataReceiver.
-    Delegates all graph rendering to GraphWindow.
-    """
-
+        
+class LauncherApp(tkinter.Tk):
     def __init__(self):
         super().__init__()
         self.title("EV3 Robot Controller")
+        self.configure(background=COLOUR_BACKGROUND)
         self.resizable(True, False)
-        self.configure(bg=CLR_BG)
-
-        # State
-        self._task      = tk.StringVar(value="LaneKeeping")
-        self._algorithm = tk.StringVar(value="PID")
-        self._ev3_host  = tk.StringVar(value="ev3dev.local")
-        self._graph_win = None
-
-        # Start the shared data receiver immediately
-        self._receiver = DataReceiver(LISTEN_PORT, MAX_POINTS)
-        self._receiver.on_connect(self._handle_connect)
-        self._receiver.on_meta(self._handle_meta)
+        
+        self.task=tkinter.StringVar(value="LaneKeeping")
+        self.algorithm=tkinter.StringVar(value="PID")
+        self.ev3Host=tkinter.StringVar(value="ev3dev.local")
+        self.graphWindow=None
+        
+        self.receiver=DataReceiver(LISTEN_PORT, MAX_POINTS)
+        self.receiver.onConnect(self.handleConnect)
+        self.receiver.onMeta(self.handleMeta)
+        
         try:
-            self._receiver.start()
-        except RuntimeError as exc:
-            self._boot_error = str(exc)
+            self.receiver.start()
+        except RuntimeError as e:
+            self.bootError=str(e)
         else:
-            self._boot_error = None
-
-        self._build_ui()
-
-        if self._boot_error:
-            self._set_status(f"⚠  {self._boot_error}", CLR_RED)
-
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
-
-    # ── UI construction ───────────────────────────────────────────────────
-    def _build_ui(self):
-        outer = tk.Frame(self, bg=CLR_BG, padx=24, pady=20)
-        outer.pack(fill=tk.BOTH, expand=True)
-
-        # Header
-        tk.Label(
+            self.bootError=None
+            
+        self.buildUI()    
+        
+        if self.bootError:
+            self.setStatus(f"Port error: {self.bootError}", COLOUR_RED)
+            
+        self.protocol("WM_DELETE_WINDOW", self.onClose)
+        
+    def buildUI(self):
+        outer=tkinter.Frame(self, bg=COLOUR_BACKGROUND, padx=24, pady=20)
+        outer.pack(fill=tkinter.BOTH, expand=True)
+        
+        tkinter.Label(
             outer,
             text="EV3  Robot  Controller",
-            font=("Segoe UI", 18, "bold"),
-            fg=CLR_BTN_ACTIVE, bg=CLR_BG,
+            foreground=COLOUR_BUTTON_ACTIVE,
+            background=COLOUR_BACKGROUND,
+            font=("Segoe UI", 18, "bold")
         ).pack(pady=(0, 4))
-
-        tk.Label(
+        
+        tkinter.Label(
             outer,
-            text="Select task and algorithm, then open the live graph",
-            font=("Segoe UI", 9),
-            fg=CLR_SUBTEXT, bg=CLR_BG,
+            text="Select a task and algorithm, then start the robot to see live data visualization.",
+            foreground=COLOUR_SUBTEXT,
+            background=COLOUR_BACKGROUND,
+            font=("Segoe UI", 9)
         ).pack(pady=(0, 18))
-
-        self._build_toggle_row(
-            outer,
-            label="Task",
-            variable=self._task,
-            options=[("Lane Keeping", "LaneKeeping"), ("Maze Solver", "MazeSolver")],
+        
+        self.buildToggleRow(
+            outer, 
+            label="Task:",
+            variable=self.task,
+            options=[("Lane Keeping", "LaneKeeping"), ("Maze Solver", "MazeSolver")]
         )
-
-        tk.Frame(outer, bg=CLR_BG, height=12).pack()
-
-        self._build_toggle_row(
-            outer,
-            label="Algorithm",
-            variable=self._algorithm,
+        
+        tkinter.Frame(outer, height=12, bg=COLOUR_BACKGROUND).pack()  
+        
+        self.buildToggleRow(
+            outer, 
+            label="Algorithm:",
+            variable=self.algorithm,
             options=[
-                ("PID",          "PID"),
-                ("Fuzzy PI",     "FuzzyPI"),
-                ("Abs. Fuzzy",   "AbsoluteFuzzy"),
-                ("Automata",     "FuzzyAutomata"),
-            ],
+                ("PID", "PID"), 
+                ("Fuzzy PI", "FuzzyPI"), 
+                ("Fuzzy Rule-Based", "FuzzyRuleBased"), 
+                ("Fuzzy Automata", "FuzzyAutomata")
+            ]
         )
-
-        tk.Frame(outer, bg=CLR_BG, height=16).pack()
-
-        # EV3 hostname / IP entry
-        host_row = tk.Frame(outer, bg=CLR_BG)
-        host_row.pack(fill=tk.X)
-
-        tk.Label(
-            host_row, text="EV3 Host", width=10, anchor="w",
+        
+        tkinter.Frame(outer, height=16, bg=COLOUR_BACKGROUND).pack()
+        
+        hostRow=tkinter.Frame(outer, bg=COLOUR_BACKGROUND)
+        hostRow.pack(fill=tkinter.X)
+        
+        tkinter.Label(
+            hostRow,
+            text="EV3 Host:",
+            foreground=COLOUR_TEXT,
+            background=COLOUR_BACKGROUND,
             font=("Segoe UI", 10, "bold"),
-            fg=CLR_TEXT, bg=CLR_BG,
-        ).pack(side=tk.LEFT)
-
-        tk.Entry(
-            host_row,
-            textvariable=self._ev3_host,
+            width=10,
+            anchor="w"
+        ).pack(side=tkinter.LEFT)
+        
+        tkinter.Entry(
+            hostRow,
+            textvariable=self.ev3Host,
+            foreground=COLOUR_TEXT,
+            background=COLOUR_SURFACE,
+            insertbackground=COLOUR_TEXT,
             font=("Segoe UI", 10),
-            bg=CLR_SURFACE, fg=CLR_TEXT,
-            insertbackground=CLR_TEXT,
-            relief=tk.FLAT,
-            width=22,
-        ).pack(side=tk.LEFT, padx=4, ipady=4)
+            relief=tkinter.FLAT,
+            width=24,
+        ).pack(side=tkinter.LEFT, padx=(6, 0))
+        
+        tkinter.Frame(outer, height=16, bg=COLOUR_BACKGROUND).pack()
 
-        tk.Label(
-            host_row,
-            text="(SSH fallback if pybricksdev not found)",
-            font=("Segoe UI", 8),
-            fg=CLR_BORDER, bg=CLR_BG,
-        ).pack(side=tk.LEFT, padx=(6, 0))
-
-        tk.Frame(outer, bg=CLR_BG, height=16).pack()
-
-        # Selected configuration preview
-        self._config_lbl = tk.Label(
+        self.configureLabel=tkinter.Label(
             outer,
-            text=self._config_text(),
-            font=("Segoe UI", 9, "italic"),
-            fg=CLR_SUBTEXT, bg=CLR_BG,
+            text=self.configureText(),
+            foreground=COLOUR_SUBTEXT,
+            background=COLOUR_BACKGROUND,
+            font=("Segoe UI", 9),
         )
-        self._config_lbl.pack()
-
-        tk.Frame(outer, bg=CLR_BG, height=16).pack()
-
-        # Graph button
-        self._graph_btn = tk.Button(
+        self.configureLabel.pack()
+        
+        tkinter.Frame(outer, height=16, bg=COLOUR_BACKGROUND).pack()
+        
+        self.graphButton=tkinter.Button(
             outer,
-            text="  Open Live Graph  ",
-            font=("Segoe UI", 11, "bold"),
-            fg=CLR_BG, bg=CLR_BTN_ACTIVE,
+            text="Start Robot",
+            foreground=COLOUR_BACKGROUND,
+            background=COLOUR_BUTTON_ACTIVE,
+            activeforeground=COLOUR_BACKGROUND,
             activebackground="#74c7ec",
-            activeforeground=CLR_BG,
-            relief=tk.FLAT,
+            font=("Segoe UI", 11, "bold"),
+            relief=tkinter.FLAT,
             cursor="hand2",
             padx=16, pady=8,
-            command=self._open_graph,
+            command=self.openGraph,
         )
-        self._graph_btn.pack()
-
-        tk.Frame(outer, bg=CLR_BG, height=20).pack()
-
-        # Status bar
-        status_frame = tk.Frame(outer, bg=CLR_SURFACE, pady=6, padx=10)
-        status_frame.pack(fill=tk.X)
-
-        self._status_dot = tk.Label(
-            status_frame, text="●", fg=CLR_YELLOW,
-            bg=CLR_SURFACE, font=("Segoe UI", 10)
+        
+        self.graphButton.pack()
+        
+        tkinter.Frame(outer, height=20, background=COLOUR_BACKGROUND).pack()
+        
+        statusFrame=tkinter.Frame(outer, background=COLOUR_SURFACE, padx=6, pady=10)
+        statusFrame.pack(fill=tkinter.X)
+        
+        self.statusDot=tkinter.Label(
+            statusFrame, 
+            text="●", 
+            foreground=COLOUR_YELLOW, 
+            background=COLOUR_SURFACE, 
+            font=("Segoe UI", 10)
         )
-        self._status_dot.pack(side=tk.LEFT, padx=(0, 4))
-
-        self._status_lbl = tk.Label(
-            status_frame,
-            text="Listening on port 5005 – waiting for EV3…",
-            font=("Segoe UI", 9),
-            fg=CLR_SUBTEXT, bg=CLR_SURFACE,
+        
+        self.statusDot.pack(side=tkinter.LEFT, padx=(0, 4))
+        
+        self.statusLabel=tkinter.Label(
+            statusFrame, 
+            text="Listening on port 5005 - waiting for EV3…", 
+            foreground=COLOUR_SUBTEXT, 
+            background=COLOUR_SURFACE, 
+            font=("Segoe UI", 9)
         )
-        self._status_lbl.pack(side=tk.LEFT)
-
-        # Hint
-        tk.Label(
+        
+        self.statusLabel.pack(side=tkinter.LEFT)
+        
+        tkinter.Label(
             outer,
             text="Deploy  fuzzy_robot.py  to the EV3 and run it",
-            font=("Segoe UI", 8),
-            fg=CLR_BORDER, bg=CLR_BG,
+            foreground=COLOUR_BORDER,
+            background=COLOUR_BACKGROUND,
+            font=("Segoe UI", 8)
         ).pack(pady=(10, 0))
-
-    def _build_toggle_row(self, parent, label: str, variable: tk.StringVar, options: list):
-        """Build a labelled row of mutually-exclusive toggle buttons."""
-        row = tk.Frame(parent, bg=CLR_BG)
-        row.pack(fill=tk.X)
-
-        tk.Label(
-            row, text=label, width=10, anchor="w",
+        
+    def buildToggleRow(self, parent, label, variable, options):
+        row=tkinter.Frame(parent, bg=COLOUR_BACKGROUND)
+        row.pack(fill=tkinter.X)
+        
+        tkinter.Label(
+            row,
+            text=label,
+            foreground=COLOUR_TEXT,
+            background=COLOUR_BACKGROUND,
             font=("Segoe UI", 10, "bold"),
-            fg=CLR_TEXT, bg=CLR_BG,
-        ).pack(side=tk.LEFT)
-
-        btn_frame = tk.Frame(row, bg=CLR_BG)
-        btn_frame.pack(side=tk.LEFT)
-
-        buttons = {}
-
-        def make_select(value, btns):
+            width=10,
+            anchor="w"
+        ).pack(side=tkinter.LEFT)
+        
+        buttonFrame=tkinter.Frame(row, bg=COLOUR_BACKGROUND)
+        buttonFrame.pack(side=tkinter.LEFT)
+        
+        buttons={}
+        
+        def makeSelect(value, buttons):
             def select():
                 variable.set(value)
-                for v, b in btns.items():
-                    b.config(
-                        bg=CLR_BTN_ACTIVE if v == value else CLR_BTN_IDLE,
-                        fg=CLR_BG        if v == value else CLR_SUBTEXT,
+                for v, btn in buttons.items():
+                    btn.config(
+                        background=COLOUR_BUTTON_ACTIVE if v==value else COLOUR_BUTTON_IDLE,
+                        foreground=COLOUR_BACKGROUND if v==value else COLOUR_SUBTEXT,
                     )
-                self._config_lbl.config(text=self._config_text())
+                    self.configureLabel.config(text=self.configureText())
             return select
-
+        
         for display, value in options:
-            btn = tk.Button(
-                btn_frame,
+            button=tkinter.Button(
+                buttonFrame,
                 text=f"  {display}  ",
+                activebackground=COLOUR_BACKGROUND,
+                background=COLOUR_BUTTON_ACTIVE if variable.get()==value else COLOUR_BUTTON_IDLE,
+                foreground=COLOUR_BACKGROUND if variable.get()==value else COLOUR_SUBTEXT,
+                activeforeground=COLOUR_BACKGROUND,
                 font=("Segoe UI", 10),
-                bg=CLR_BTN_ACTIVE if variable.get() == value else CLR_BTN_IDLE,
-                fg=CLR_BG         if variable.get() == value else CLR_SUBTEXT,
-                activebackground=CLR_BTN_ACTIVE,
-                activeforeground=CLR_BG,
-                relief=tk.FLAT,
+                relief=tkinter.FLAT,
                 cursor="hand2",
                 padx=6, pady=5,
+                command=makeSelect(value, buttons)
             )
-            btn.pack(side=tk.LEFT, padx=4)
-            buttons[value] = btn
-
-        # Wire commands now that all buttons exist
+            button.pack(side=tkinter.LEFT, padx=4)
+            buttons[value]=button
+        
         for display, value in options:
-            buttons[value].config(command=make_select(value, buttons))
-
-    # ── Helpers ───────────────────────────────────────────────────────────
-    def _config_text(self):
-        title, _, _ = _make_labels(self._task.get(), self._algorithm.get())
+            buttons[value].config(command=makeSelect(value, buttons))
+            
+    def configureText(self):
+        title, _, _=makeLabels(self.task.get(), self.algorithm.get())
         return f"Active: {title}"
-
-    def _set_status(self, text: str, colour: str = CLR_YELLOW):
-        dot_colour = CLR_GREEN if colour == CLR_GREEN else colour
-        self._status_dot.config(fg=dot_colour)
-        self._status_lbl.config(text=text, fg=colour if colour != CLR_GREEN else CLR_SUBTEXT)
-
-    # ── Event handlers ────────────────────────────────────────────────────
-    def _open_graph(self):
-        """Patch fuzzy_robot.py, launch it on the EV3, and open the graph."""
-        if self._graph_win and tk.Toplevel.winfo_exists(self._graph_win):
-            self._graph_win.lift()
-            self._graph_win.focus_force()
+    
+    def setStatus(self, text: str, colour: str=COLOUR_YELLOW):
+        dotColour=COLOUR_GREEN if colour==COLOUR_GREEN else colour
+        self.statusDot.config(foreground=dotColour)
+        self.statusLabel.config(text=text, foreground=colour if colour!=COLOUR_GREEN else COLOUR_SUBTEXT)
+        
+    def openGraph(self):
+        if self.graphWindow and tkinter.Toplevel.winfo_exists(self.graphWindow):
+            self.graphWindow.lift()
+            self.graphWindow.focus_force()
             return
-
-        task      = self._task.get()
-        algorithm = self._algorithm.get()
-
-        self._patch_robot_file(task, algorithm)
-        self._receiver.clear()
-        self._graph_win = GraphWindow(
-            self, self._receiver, task, algorithm,
-            on_close=self._on_graph_closed,
+        
+        task=self.task.get()
+        algorithm=self.algorithm.get()
+        
+        self.patchRobotFile(task, algorithm)
+        self.receiver.clear()
+        self.graphWindow=GraphWindow(
+            self, 
+            self.receiver, 
+            task, 
+            algorithm, 
+            onClose=self.onGraphClose
         )
-        self._launch_ev3()
-
-    def _on_graph_closed(self):
-        """Called when the GraphWindow is closed; resets state for the next run."""
-        self._graph_win = None
-        self._set_status("Run finished — choose task/algorithm and click Open Live Graph", CLR_YELLOW)
-
-    def _patch_robot_file(self, task: str, algorithm: str):
-        """Write the selected TASK and ALGORITHM into fuzzy_robot.py."""
-        robot_path = Path(__file__).with_name("fuzzy_robot.py")
-        if not robot_path.exists():
+        
+        self.launchEV3()
+    
+    def onGraphClose(self):
+        self.graphWindow=None
+        self.setStatus("Run finished — choose task/algorithm and click Open Live Graph", COLOUR_YELLOW)
+        
+    def patchRobotFile(self, task: str, algorithm: str):
+        robotPath=Path(__file__).with_name("fuzzy_robot.py")
+        
+        if not robotPath.exists():
             return
-        text = robot_path.read_text()
-        text = re.sub(r'^TASK\s*=\s*"[^"]*"',
-                      f'TASK = "{task}"',      text, flags=re.MULTILINE)
-        text = re.sub(r'^ALGORITHM\s*=\s*"[^"]*"',
-                      f'ALGORITHM = "{algorithm}"', text, flags=re.MULTILINE)
-        robot_path.write_text(text)
-
-    def _launch_ev3(self):
-        """Kick off the EV3 launch in a background thread to keep the UI responsive."""
-        robot_path = Path(__file__).with_name("fuzzy_robot.py")
-        host       = "10.194.244.43"
-        self._set_status("Connecting to EV3…", CLR_YELLOW)
+        
+        text=robotPath.read_text()
+        text=re.sub(
+            r'^TASK\s*=\s*"[^"]*"',
+            f'TASK = "{task}"',   
+            text, 
+            flags=re.MULTILINE
+        )
+        
+        text=re.sub(
+            r'^ALGORITHM\s*=\s*"[^"]*"',
+            f'ALGORITHM = "{algorithm}"',   
+            text, 
+            flags=re.MULTILINE
+        )
+        
+        robotPath.write_text(text)
+        
+    def launchEV3(self):
+        robotPath=Path(__file__).with_name("fuzzy_robot.py")
+        host=self.ev3Host.get()
+        self.setStatus("Connecting to EV3…", COLOUR_YELLOW)
         threading.Thread(
-            target=self._launch_ev3_worker,
-            args=(robot_path, host),
-            daemon=True,
+            target=self.launchEV3Thread, 
+            args=(robotPath, host), 
+            daemon=True
         ).start()
-
-    def _launch_ev3_worker(self, robot_path: Path, host: str):
-        """Background worker: tries pybricksdev first, then SSH/SCP."""
-        # ── Attempt 1: pybricksdev (Bluetooth LE) ────────────────────────
-        try:
-            subprocess.Popen(
-                ["pybricksdev", "run", "ble", str(robot_path)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            self.after(0, lambda: self._set_status(
-                "Launching on EV3 via Bluetooth…", CLR_YELLOW))
-            return
-        except FileNotFoundError:
-            pass  # pybricksdev not installed – fall through to SSH
-
-        # ── Attempt 2: SCP + SSH in an interactive PowerShell window ────
-        # Both commands run inside a new PowerShell window so the user can
-        # type the password if SSH keys are not set up (default: maker).
-        remote = "/home/robot/fuzzy_robot.py"
-        ps_cmd = (
-            f"scp '{robot_path}' robot@{host}:{remote}"
+        
+    def launchEV3Thread(self, robotPath: Path, host: str):
+        remote="/home/robot/fuzzy_robot.py"
+        psCommand=(
+            f"scp '{robotPath}' robot@{host}:{remote}"
             f"; if ($?) {{ ssh robot@{host} brickrun -r -- pybricks-micropython {remote} }}"
         )
+        
         subprocess.Popen(
-            ["powershell", "-NoExit", "-Command", ps_cmd],
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
+            ["powershell", "-NoExit", "-Command", psCommand], 
+            creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-
-        self.after(0, lambda: self._set_status(
-            f"Running on EV3 via SSH ({host})…", CLR_YELLOW))
-
-    def _handle_connect(self, ip: str):
-        """Called from receiver thread – schedule UI update on main thread.
-        NOTE: winfo_exists and all Tk calls must run on the main thread;
-        wrapping everything in a single after() closure guarantees that.
-        """
-        def _on_main():
-            self._set_status(f"Connected  –  receiving data from  {ip}", CLR_GREEN)
-            if self._graph_win and tk.Toplevel.winfo_exists(self._graph_win):
-                self._graph_win.set_status_connected(ip)
-        self.after(0, _on_main)
-
-    def _handle_meta(self, label: str):
-        """Called from receiver thread – update labels on main thread."""
-        self.after(0, lambda: self._apply_meta(label))
-
-    def _apply_meta(self, label: str):
-        # META label format from EV3: "LaneKeeping-AbsoluteFuzzy"
+        
+        self.after(0, lambda: self.setStatus(
+            f"Running on EV3 via SSH ({host})…", COLOUR_YELLOW
+        ))
+    
+    def handleConnect(self, ip: str):
+        def onMain():
+            self.setStatus(f"Connected  -  receiving data from  {ip}", COLOUR_GREEN)
+            if self.graphWindow and tkinter.Toplevel.winfo_exists(self.graphWindow):
+                self.graphWindow.setStatusConnected(ip)
+        self.after(0, onMain)
+        
+    def handleMeta(self, label: str):
+        self.after(0, lambda: self.applyMeta(label))
+        
+    def applyMeta(self, label: str):
         if "-" in label:
             task, algorithm = label.split("-", 1)
         else:
-            task, algorithm = self._task.get(), self._algorithm.get()
-        if self._graph_win and tk.Toplevel.winfo_exists(self._graph_win):
-            self._graph_win.update_labels(task, algorithm)
-
-    def _on_close(self):
-        self._receiver.stop()
+            task, algorithm = self.task.get(), self.algorithm.get()
+        if self.graphWindow and tkinter.Toplevel.winfo_exists(self.graphWindow):
+            self.graphWindow.updateLabels(task, algorithm)
+    
+    def onClose(self):
+        self.receiver.stop()
         self.destroy()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ENTRY POINT
-# ─────────────────────────────────────────────────────────────────────────────
+        
 if __name__ == "__main__":
-    app = LauncherApp()
+    app=LauncherApp()
     app.mainloop()
+            

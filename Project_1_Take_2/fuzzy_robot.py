@@ -233,6 +233,15 @@ class WifiStreamer:
         except Exception as error:
             print("Warning: Could not send data-" + str(error))
             
+    def sendCell(self, x, y, walls):
+        if self.socket is None:
+            return
+        try:
+            packet="CELL,"+str(x)+","+str(y)+","+str(walls)+"\n"
+            self.socket.sendto(packet.encode(), (self.ip, self.port))
+        except Exception as error:
+            print("Warning: Could not send data-" + str(error))
+            
     def close(self):
         if self.socket is not None:
             self.socket.close()
@@ -657,12 +666,14 @@ class MazeMap:
     BACKDIR = {(0,1):0, (1,0):1, (0,-1):2, (-1,0):3}
 
     def __init__(self):
-        self.visited          = set()
-        self.path             = []      
-        self.x                = 0
-        self.y                = 0
-        self.heading          = 0       
-        self.expectedGyroAngle = 0      
+        self.visited           = set()
+        self.path              = []      
+        self.x                 = 0
+        self.y                 = 0
+        self.heading           = 0       
+        self.expectedGyroAngle = 0
+        self.cellWalls         = {}
+        self.entryDirection    = None      
 
     def markVisited(self):
         self.visited.add((self.x, self.y))
@@ -700,7 +711,25 @@ class MazeMap:
         self.expectedGyroAngle += self.TURN[step]   
         self.heading = absDir
         
+    def storeCellInfo(self, openDirs):
+        if(self.x, self.y) not in self.cellWalls:
+            walls=0
+            
+            for direction in openDirs:
+                walls |= (1 << direction)
+                
+            if self.entryDirection is not None:
+                    walls |= (1 << ((self.entryDirection + 2) % 4))
+                    
+            self.cellWalls[(self.x, self.y)]=walls
+            
+            return walls
+        else:
+            return None
+            
+        
     def commitMove(self):
+        self.entryDirection=self.heading
         self.path.append((self.x, self.y))
         self.x+=self.DX[self.heading]
         self.y+=self.DY[self.heading]
@@ -1000,6 +1029,11 @@ class MazeSolverController(Controller):
                 openDirs=self.scanJunction()
                 print("Cell ("+str(self.mazeMap.x)+","+str(self.mazeMap.y)+")"+" H="+str(self.mazeMap.heading)+" Open="+str(openDirs))
                 
+                walls=self.mazeMap.storeCellInfo(openDirs)
+                
+                if walls is not None:
+                    self.streamer.sendCell(self.mazeMap.x, self.mazeMap.y, walls)
+                
                 absDir, degreeTurn=self.mazeMap.planMove(openDirs)
                 
                 if absDir is None:
@@ -1036,7 +1070,6 @@ class MazeSolverController(Controller):
                     self.mazeMap.commitMove()
                 
                 self.nextStep()
-                self.streamer.send(self.step, float(self.mazeMap.x), float(self.mazeMap.y))
                 
         except KeyboardInterrupt:
             self.robot.stop()
