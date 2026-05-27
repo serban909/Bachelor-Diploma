@@ -29,7 +29,6 @@ ALGORITHM_NAMES: dict[str, str]={
     "PID": "PID",
     "FuzzyPI": "Fuzzy PI",
     "FuzzyRuleBased": "Fuzzy Rule-Based",
-    "FuzzyAutomata": "Fuzzy Automata",
 }
 
 def makeLabels(task: str, algorithm: str)->tuple[str, str, str]:
@@ -123,6 +122,10 @@ class DataReceiver:
                         x, y, walls = int(parts[1]), int(parts[2]), int(parts[3])
                         self.cells[(x, y)] = walls
                         self.currentPosition = (x, y)
+                        if not self.connected:
+                            self.connected=True
+                            if self._onConnect:
+                                self._onConnect(address[0])
                     continue
 
                 parts=message.split(",")
@@ -408,7 +411,6 @@ class LauncherApp(tkinter.Tk):
                 ("PID", "PID"), 
                 ("Fuzzy PI", "FuzzyPI"), 
                 ("Fuzzy Rule-Based", "FuzzyRuleBased"), 
-                ("Fuzzy Automata", "FuzzyAutomata")
             ]
         )
         
@@ -586,25 +588,21 @@ class LauncherApp(tkinter.Tk):
         
     def patchRobotFile(self, task: str, algorithm: str):
         robotPath=Path(__file__).with_name("fuzzy_robot.py")
-        
+
         if not robotPath.exists():
             return
-        
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("10.255.255.255", 1))
+                pcIp=s.getsockname()[0]
+        except Exception:
+            pcIp="127.0.0.1"
+
         text=robotPath.read_text()
-        text=re.sub(
-            r'^TASK\s*=\s*"[^"]*"',
-            f'TASK = "{task}"',   
-            text, 
-            flags=re.MULTILINE
-        )
-        
-        text=re.sub(
-            r'^ALGORITHM\s*=\s*"[^"]*"',
-            f'ALGORITHM = "{algorithm}"',   
-            text, 
-            flags=re.MULTILINE
-        )
-        
+        text=re.sub(r'^TASK\s*=\s*"[^"]*"',      f'TASK = "{task}"',           text, flags=re.MULTILINE)
+        text=re.sub(r'^ALGORITHM\s*=\s*"[^"]*"',  f'ALGORITHM = "{algorithm}"', text, flags=re.MULTILINE)
+        text=re.sub(r'"PC_IP":\s*"[^"]*"',        f'"PC_IP": "{pcIp}"',         text)
         robotPath.write_text(text)
         
     def launchEV3(self):
