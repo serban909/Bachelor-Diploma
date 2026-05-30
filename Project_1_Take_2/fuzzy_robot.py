@@ -52,6 +52,9 @@ def initializeConfiguration(task, algorithm):
             "BaseSpeed":               90,
             "MinSpeed":                30,
             "HeadingThreshold":        3,
+            "CenteringThreshold":      20,
+            "CenteringGain":           0.5,
+            "CorrectionClamp":         30,
             "LogInterval":             1,
         }
     else:
@@ -209,6 +212,35 @@ class WifiStreamer:
     def close(self):
         if self.socket is not None:
             self.socket.close()
+            
+class FileLogger:
+    def __init__(self, label):
+        self.filename=self.uniqueName(label)
+        self.file=open(self.filename, "w")
+        self.file.write("Step,Disturbance,Output\n")
+        print("Logging to file: "+self.filename)
+    
+    def uniqueName(self, label):
+        name=label+".csv"
+        index=2
+        try:
+            open(name, "r").close()
+            while True:
+                name=label+"("+str(index)+")"+".csv"
+                try:
+                    open(name, "r").close()
+                    index+=1
+                except OSError:
+                    return name
+        except OSError:
+            return name
+        
+    def log(self, step, disturbance, output):
+        self.file.write(str(step)+","+str(disturbance)+","+str(output)+"\n")
+    
+    def close(self):
+        if self.file:
+            self.file.close()
             
 class Algorithm:
     def compute(self, setpoint, measuredpoint, dt):
@@ -600,7 +632,7 @@ def hardware_setup(configuration):
     return ev3, robot
 
 class Controller:
-    def __init__(self, algorithm, configuration, streamer, ev3, robot):
+    def __init__(self, algorithm, configuration, streamer, ev3, robot, label):
         self.algorithm=algorithm
         self.configuration=configuration
         self.streamer=streamer
@@ -608,6 +640,7 @@ class Controller:
         self.robot=robot
         self.stopwatch=StopWatch()
         self.step=0
+        self.logger=FileLogger(label)
         
     def run(self):
         raise NotImplementedError
@@ -628,8 +661,8 @@ class Controller:
             return "PID"
     
 class LaneKeepingController(Controller):
-    def __init__(self, algorithm, configuration, streamer, ev3, robot):
-        super().__init__(algorithm, configuration, streamer, ev3, robot)
+    def __init__(self, algorithm, configuration, streamer, ev3, robot, label):
+        super().__init__(algorithm, configuration, streamer, ev3, robot, label)
         self.leftSensor=ColorSensor(configuration["LeftColorSensor"])
         self.rightSensor=ColorSensor(configuration["RightColorSensor"])
         self.blackThreshold=configuration["BlackThreshold"]
@@ -668,7 +701,6 @@ class LaneKeepingController(Controller):
             return self.baseSpeed, 0
         
         disturbance, turnRate=self.algorithm.compute(0, disturbance, dt)
-        self.streamer.send(self.step, disturbance, turnRate)
         
         return self.turningSpeed, turnRate
     
@@ -705,14 +737,16 @@ class LaneKeepingController(Controller):
                     
                 disturbance=leftValue-rightValue
                 speed, turnRate=self.decideAction(leftValue, rightValue, disturbance, dt)
+                self.streamer.send(self.step, disturbance, turnRate)
+                self.logger.log(self.step, disturbance, turnRate)
                 
                 if step%self.logInterval==0:
-                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue)+" Output: "+str(turnRate))
+                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue))
                     if isinstance(self.algorithm, FuzzyRuleBased):
                         print(self.algorithm.logRules())
                 
-                if speed<10:
-                    speed=10
+                if speed<30:
+                    speed=30
                     
                 self.robot.drive(speed, turnRate)
                 wait(20)
@@ -723,10 +757,11 @@ class LaneKeepingController(Controller):
             print("\nLANE KEEPING STOPPED\n")
         finally:
             self.streamer.close()
+            self.logger.close()
             
 class MazeSolverController(Controller):
-    def __init__(self, algorithm, configuration, streamer, ev3, robot):
-        super().__init__(algorithm, configuration, streamer, ev3, robot)
+    def __init__(self, algorithm, configuration, streamer, ev3, robot, label):
+        super().__init__(algorithm, configuration, streamer, ev3, robot, label)
         self.forwardSensor      = UltrasonicSensor(configuration["ForwardUltrasonicSensor"])
         self.leftSensor         = UltrasonicSensor(configuration["LeftUltrasonicSensor"])
         self.rightSensor        = UltrasonicSensor(configuration["RightUltrasonicSensor"])
@@ -739,6 +774,9 @@ class MazeSolverController(Controller):
         self.baseSpeed              = configuration["BaseSpeed"]
         self.minSpeed               = configuration["MinSpeed"]
         self.headingThreshold   = configuration["HeadingThreshold"]
+        self.centeringThreshold = configuration["CenteringThreshold"]
+        self.centeringGain      = configuration["CenteringGain"]
+        self.correctionClamp    = configuration["CorrectionClamp"]
         self.logInterval        = configuration["LogInterval"]
         self.mazeMap            = MazeMap()
 
@@ -770,24 +808,22 @@ class MazeSolverController(Controller):
         return (error + 180) % 360 - 180
 
     def alignHeading(self):
-        target=self.mazeMap.gyroTarget()
-        error=target - self.gyro.angle()
-        correction = ((error + 180) % 360) - 180
+        correction =self.gyroError()
         if abs(correction) > self.headingThreshold:
             self.robot.turn(correction)
-            wait(200)
+            wait(20)
             
     def centerInCorridor(self):
         leftDist = self.leftSensor.distance()
         rightDist = self.rightSensor.distance()
         
-        if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.minSpeed:
-            correction = (rightDist - leftDist) * 0.5
+        if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.centeringThreshold:
+            correction = (rightDist - leftDist) * self.centeringGain
             
-            if correction > 30:
-                correction = 30
-            elif correction < -30:
-                correction = -30
+            if correction > self.correctionClamp:
+                correction = self.correctionClamp
+            elif correction < -self.correctionClamp:
+                correction = -self.correctionClamp
             
             self.robot.turn(correction)
             wait(10)
@@ -808,7 +844,7 @@ class MazeSolverController(Controller):
             deadline = self.now() + 5.0
             
             turnRate=30 if degreeTurn > 0 else -30
-            self.robot.turn(turnRate)
+            self.robot.drive(0, turnRate)
             
             if degreeTurn > 0:
                 while self.gyro.angle() < targetAngle and self.now() < deadline:
@@ -853,6 +889,8 @@ class MazeSolverController(Controller):
 
             self.nextStep()
             self.streamer.send(self.step, disturbance, speed)
+            self.logger.log(self.step, disturbance, speed)
+            
             if self.step % self.logInterval == 0:
                 print("Step "+str(self.step)+" Forward: "+str(forward)+"mm Speed: "+str(speed)+" mm/s")
                 if isinstance(self.algorithm, FuzzyRuleBased):
@@ -860,6 +898,15 @@ class MazeSolverController(Controller):
             wait(10)
 
         self.robot.stop()
+        
+    def executeMove(self, degreeTurn, direction, commit):
+        self.executeTurn(degreeTurn)
+        wait(20)
+        self.mazeMap.applyTurn(direction)
+        self.alignHeading()
+        self.centerInCorridor()
+        self.driveCell(direction)
+        commit()
 
     def printHeader(self, algorithm):
         self.ev3.speaker.beep()
@@ -894,23 +941,11 @@ class MazeSolverController(Controller):
 
                     print("Backtrack: turn "+str(degreeTurn)+" deg")
 
-                    self.executeTurn(degreeTurn)
-                    wait(200)
-                    self.mazeMap.applyTurn(backDir)
-                    self.alignHeading()
-                    self.centerInCorridor()
-                    self.driveCell(backDir)
-                    self.mazeMap.commitBacktrack()
+                    self.executeMove(degreeTurn, backDir, self.mazeMap.commitBacktrack)
                 else:
                     print("Move: dir="+str(absDir)+" turn="+str(degreeTurn)+" deg")
 
-                    self.executeTurn(degreeTurn)
-                    wait(200)
-                    self.mazeMap.applyTurn(absDir)
-                    self.alignHeading()
-                    self.centerInCorridor()
-                    self.driveCell(absDir)
-                    self.mazeMap.commitMove()
+                    self.executeMove(degreeTurn, absDir, self.mazeMap.commitMove)
                 
                 self.nextStep()
                 
@@ -920,11 +955,12 @@ class MazeSolverController(Controller):
             print("\nMAZE SOLVER STOPPED at ("+str(self.mazeMap.x)+","+str(self.mazeMap.y)+")\n")
         finally:
             self.streamer.close()
+            self.logger.close()
             
 def createController(task, algorithmName):
     configuration=initializeConfiguration(task, algorithmName)
     ev3, robot=hardware_setup(configuration)
-    label=task+"-"+algorithmName    
+    label=task+"_"+algorithmName    
     streamer=WifiStreamer(configuration, label)
     
     if algorithmName=="PID":
@@ -937,9 +973,9 @@ def createController(task, algorithmName):
         raise ValueError("Unknown algorithm: "+algorithmName)
 
     if task=="LaneKeeping":
-        return LaneKeepingController(algorithm, configuration, streamer, ev3, robot)
+        return LaneKeepingController(algorithm, configuration, streamer, ev3, robot, label)
     elif task=="MazeSolver":
-        return MazeSolverController(algorithm, configuration, streamer, ev3, robot)
+        return MazeSolverController(algorithm, configuration, streamer, ev3, robot, label)
     else:
         raise ValueError("Unknown task: "+task)
     

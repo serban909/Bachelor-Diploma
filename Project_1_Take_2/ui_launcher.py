@@ -729,8 +729,8 @@ class LauncherApp(tkinter.Tk):
         self.after(0, lambda: self.applyMeta(label))
         
     def applyMeta(self, label: str):
-        if "-" in label:
-            task, algorithm = label.split("-", 1)
+        if "_" in label:
+            task, algorithm = label.split("_", 1)
         else:
             task, algorithm = self.task.get(), self.algorithm.get()
         if self.graphWindow and tkinter.Toplevel.winfo_exists(self.graphWindow):
