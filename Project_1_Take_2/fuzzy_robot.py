@@ -7,10 +7,10 @@ from pybricks.tools import wait, StopWatch
 from pybricks.robotics import DriveBase
 import socket
 
-TASK = "LaneKeeping"   # "LaneKeeping" / "MazeSolver"
-ALGORITHM = "PID"  # "PID" / "FuzzyPI" / "FuzzyRuleBased"
+TASK = "MazeSolver"   # "LaneKeeping" / "MazeSolver"
+ALGORITHM = "FuzzyRuleBased"  # "PID" / "FuzzyPI" / "FuzzyRuleBased"
 
-def initializeConfiguration(task, algorithm): 
+def initializeConfiguration(task, algorithm):
     hardware={
         "LeftMotor": Port.A,
         "RightMotor": Port.D,
@@ -20,7 +20,7 @@ def initializeConfiguration(task, algorithm):
     
     wifi={
         "EnableStreaming": True,
-        "PC_IP": "192.168.0.230",
+        "PC_IP": "10.238.186.90",
         "PC_PORT": 5005,
     }
     
@@ -32,9 +32,9 @@ def initializeConfiguration(task, algorithm):
             "CrossingThreshold":  7,
             "MinDifference":      3,
             "BaseSpeed":          90,
-            "TurningSpeed":       70,
-            "EmergencySpeed":     65,
-            "EmergencyTurnSpeed": 100,
+            "TurningSpeed":       60,
+            "EmergencySpeed":     30,
+            "EmergencyTurnSpeed": 45,
             "StopConfirmCount":   1,
             "LogInterval":        1,
         }
@@ -44,13 +44,13 @@ def initializeConfiguration(task, algorithm):
             "LeftUltrasonicSensor":    Port.S1,
             "RightUltrasonicSensor":   Port.S2,   
             "GyroSensor":              Port.S3,
-            "CellDistanceNS":          260,
-            "CellDistanceEW":          280,
+            "CellDistanceNS":          278,
+            "CellDistanceEW":          278,
             "OpenPassageThreshold":    90,
             "ObstacleThreshold":       30,
             "TargetForwardDistance":   60,
             "BaseSpeed":               90,
-            "MinSpeed":                60,
+            "MinSpeed":                30,
             "HeadingThreshold":        3,
             "LogInterval":             1,
         }
@@ -62,19 +62,19 @@ def initializeConfiguration(task, algorithm):
             algorithmConfiguration={
                 "Kp":          0.8,
                 "Ki":          0.05,
-                "Kd":          0.003,
+                "Kd":          0.01,
                 "MinOutput":   -100,
                 "MaxOutput":   100,
-                "IntegralMin": -1000.0,
-                "IntegralMax": 1000.0,
+                "IntegralMin": -500.0,
+                "IntegralMax": 500.0,
             }
         elif task == "MazeSolver":
             algorithmConfiguration={
                 "Kp":          0.06,
-                "Ki":          0.001,
+                "Ki":          0.01,
                 "Kd":          0.0,
                 "MinOutput":   30,
-                "MaxOutput":   150,
+                "MaxOutput":   90,
                 "IntegralMin": 0.0,
                 "IntegralMax": 500.0,
             }
@@ -104,7 +104,7 @@ def initializeConfiguration(task, algorithm):
                 "MediumDisturbance": 20.0,
                 "LargeDisturbance":  30.0,
                 "FuzzyMinOutput":    30,
-                "FuzzyMaxOutput":    150,
+                "FuzzyMaxOutput":    90,
                 "FuzzyIntegralMin":  0.0,
                 "FuzzyIntegralMax":  500.0,
                 "Rules": [
@@ -119,8 +119,8 @@ def initializeConfiguration(task, algorithm):
                 "SmallDisturbance":  3.0,
                 "MediumDisturbance": 6.0,
                 "DeltaThreshold":    3.0,
-                "SmallOutput":       10.0,
-                "MediumOutput":      30.0,
+                "SmallOutput":       5.0,
+                "MediumOutput":      20.0,
                 "LargeOutput":       50.0,
                 
                 # disturbance indices:  0=NL  1=NS  2=ZE  3=PS  4=PL
@@ -132,13 +132,13 @@ def initializeConfiguration(task, algorithm):
                         (0, 1, 6),  # R2:  NL & Z  -> PL
                         (0, 2, 6),  # R3:  NL & P  -> PL
                         (1, 0, 4),  # R4:  NS & N  -> PS
-                        (1, 1, 5),  # R5:  NS & Z  -> PM
+                        (1, 1, 4),  # R5:  NS & Z  -> PS
                         (1, 2, 5),  # R6:  NS & P  -> PM
                         (2, 0, 3),  # R7:  ZE & N  -> ZE
                         (2, 1, 3),  # R8:  ZE & Z  -> ZE
                         (2, 2, 3),  # R9:  ZE & P  -> ZE
                         (3, 0, 2),  # R10: PS & N  -> NS
-                        (3, 1, 1),  # R11: PS & Z  -> NM
+                        (3, 1, 2),  # R11: PS & Z  -> NS
                         (3, 2, 1),  # R12: PS & P  -> NM
                         (4, 0, 1),  # R13: PL & N  -> NM
                         (4, 1, 0),  # R14: PL & Z  -> NL
@@ -149,9 +149,9 @@ def initializeConfiguration(task, algorithm):
             algorithmConfiguration={
                 "SmallDisturbance":  10.0,
                 "MediumDisturbance": 20.0,
-                "DeltaThreshold":    0.0,
-                "SmallOutput":       10.0,
-                "MediumOutput":      50.0,
+                "DeltaThreshold":    1.0,
+                "SmallOutput":       30.0,
+                "MediumOutput":      60.0,
                 "LargeOutput":       90.0,
                 "Rules": [
                         (0, 1, 6),  # R1:  NL & Z  -> PL
@@ -657,17 +657,17 @@ class LaneKeepingController(Controller):
         print("Turning Speed:"+ str(self.turningSpeed))
         print("Emergency Speed:"+ str(self.emergencySpeed)+"\n")
         
-    def decideAction(self, leftValue, rightValue, difference, dt):
+    def decideAction(self, leftValue, rightValue, disturbance, dt):
         if leftValue<self.crossingThreshold and rightValue>=self.crossingThreshold:
             return self.emergencySpeed, self.emergencyTurnSpeed
         
         if rightValue<self.crossingThreshold and leftValue>=self.crossingThreshold:
             return self.emergencySpeed, -self.emergencyTurnSpeed
         
-        if abs(difference)<=self.minDifference and isinstance(self.algorithm, (PIDAlgorithm, FuzzyPIAlgorithm)):
+        if abs(disturbance)<=self.minDifference and isinstance(self.algorithm, (PIDAlgorithm, FuzzyPIAlgorithm)):
             return self.baseSpeed, 0
         
-        disturbance, turnRate=self.algorithm.compute(0, difference, dt)
+        disturbance, turnRate=self.algorithm.compute(0, disturbance, dt)
         self.streamer.send(self.step, disturbance, turnRate)
         
         return self.turningSpeed, turnRate
@@ -686,11 +686,6 @@ class LaneKeepingController(Controller):
                 
                 leftValue, rightValue=self.readSensors()
                 
-                if step%self.logInterval==0:
-                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue))
-                    if isinstance(self.algorithm, FuzzyRuleBased):
-                        print(self.algorithm.logRules())
-                
                 leftOnBlack=leftValue<self.blackThreshold
                 rightOnBlack=rightValue<self.blackThreshold
                 
@@ -708,8 +703,13 @@ class LaneKeepingController(Controller):
                 else:
                     bothSensorsOnLineCount=0
                     
-                difference=leftValue-rightValue
-                speed, turnRate=self.decideAction(leftValue, rightValue, difference, dt)
+                disturbance=leftValue-rightValue
+                speed, turnRate=self.decideAction(leftValue, rightValue, disturbance, dt)
+                
+                if step%self.logInterval==0:
+                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue)+" Output: "+str(turnRate))
+                    if isinstance(self.algorithm, FuzzyRuleBased):
+                        print(self.algorithm.logRules())
                 
                 if speed<10:
                     speed=10
@@ -770,10 +770,27 @@ class MazeSolverController(Controller):
         return (error + 180) % 360 - 180
 
     def alignHeading(self):
-        correction = self.gyroError()
+        target=self.mazeMap.gyroTarget()
+        error=target - self.gyro.angle()
+        correction = ((error + 180) % 360) - 180
         if abs(correction) > self.headingThreshold:
             self.robot.turn(correction)
             wait(200)
+            
+    def centerInCorridor(self):
+        leftDist = self.leftSensor.distance()
+        rightDist = self.rightSensor.distance()
+        
+        if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.minSpeed:
+            correction = (rightDist - leftDist) * 0.5
+            
+            if correction > 30:
+                correction = 30
+            elif correction < -30:
+                correction = -30
+            
+            self.robot.turn(correction)
+            wait(10)
                 
     def cellDist(self, absDir):
         if absDir%2==0:
@@ -784,7 +801,24 @@ class MazeSolverController(Controller):
     def executeTurn(self, degreeTurn):
         if degreeTurn == 0:
             return
-        self.robot.turn(degreeTurn)
+        
+        if abs(degreeTurn) == 90:
+            startAngle = self.gyro.angle()
+            targetAngle = startAngle + degreeTurn
+            deadline = self.now() + 5.0
+            
+            turnRate=30 if degreeTurn > 0 else -30
+            self.robot.turn(turnRate)
+            
+            if degreeTurn > 0:
+                while self.gyro.angle() < targetAngle and self.now() < deadline:
+                    wait(10)
+            else:
+                while self.gyro.angle() > targetAngle and self.now() < deadline:
+                    wait(10)
+            self.robot.stop()
+        else:
+            self.robot.turn(degreeTurn)
         
     def driveCell(self, absDir):
         cellTarget = self.cellDist(absDir)
@@ -793,8 +827,10 @@ class MazeSolverController(Controller):
         lastTime   = self.now()
         self.algorithm.reset()
         wait(20)
+        
+        forward = self.scanForward()
 
-        while travelDist < cellTarget:
+        while travelDist < cellTarget and forward >= self.obstacleThreshold:
             currentTime = self.now()
             dt          = currentTime - lastTime
             lastTime    = currentTime
@@ -804,27 +840,24 @@ class MazeSolverController(Controller):
             if forward < self.obstacleThreshold:
                 break
 
-            disturbance, speed = self.algorithm.compute(forward, self.targetForwardDistance, dt)
+            disturbance, speed = self.algorithm.compute(self.targetForwardDistance, forward, dt)
             if speed < self.minSpeed:
                 speed = self.minSpeed
             if speed > self.baseSpeed:
                 speed = self.baseSpeed
                 
-            gyroErr = self.gyroError()
-            if abs(gyroErr) > self.headingThreshold:
-                turnRate = gyroErr * 2.0
-                if turnRate >  60: turnRate =  60
-                if turnRate < -60: turnRate = -60
-            else:
-                turnRate = 0
-            self.robot.drive(speed, turnRate)
+            self.robot.drive(speed, 0)
 
             travelDist += 0.5 * (prevSpeed + speed) * dt
             prevSpeed   = speed
 
             self.nextStep()
             self.streamer.send(self.step, disturbance, speed)
-            wait(20)
+            if self.step % self.logInterval == 0:
+                print("Step "+str(self.step)+" Forward: "+str(forward)+"mm Speed: "+str(speed)+" mm/s")
+                if isinstance(self.algorithm, FuzzyRuleBased):
+                    print(self.algorithm.logRules())
+            wait(10)
 
         self.robot.stop()
 
@@ -865,6 +898,7 @@ class MazeSolverController(Controller):
                     wait(200)
                     self.mazeMap.applyTurn(backDir)
                     self.alignHeading()
+                    self.centerInCorridor()
                     self.driveCell(backDir)
                     self.mazeMap.commitBacktrack()
                 else:
@@ -874,6 +908,7 @@ class MazeSolverController(Controller):
                     wait(200)
                     self.mazeMap.applyTurn(absDir)
                     self.alignHeading()
+                    self.centerInCorridor()
                     self.driveCell(absDir)
                     self.mazeMap.commitMove()
                 
@@ -910,7 +945,10 @@ def createController(task, algorithmName):
     
 def main():
     controller=createController(TASK, ALGORITHM)
+    startTime=StopWatch()
     controller.run()
+    endTime=startTime.time()
+    print("Total time: " + str(endTime) + " ms (" + str(round(endTime / 1000.0, 2)) + " s)")
     
 if __name__=="__main__":
     main()

@@ -1,5 +1,4 @@
 import tkinter 
-from tkinter import ttk, font
 import socket
 import threading
 import re
@@ -15,6 +14,7 @@ import matplotlib.animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 
 LISTEN_PORT=5005
 MAX_POINTS=500
@@ -147,21 +147,14 @@ class DataReceiver:
 class GraphWindow(tkinter.Toplevel):
     def __init__(self, parent, receiver: DataReceiver, task: str, algorithm: str, onClose=None):
         super().__init__(parent)
-        self.title("Start the Robot")
         self.configure(background=COLOUR_BACKGROUND)
         self.geometry("950x580")
         self.resizable(True, True)
         self.receiver=receiver
         self.ani=None
         self.onCloseCallBack=onClose
-        self.task=task
         
-        if task == "MazeSolver":
-            self.title("Live Maze Map")
-            self.geometry("780x780")
-            self.buildMazeFigure()
-        else:
-            self.buildFigure(task, algorithm)
+        self.buildFigure(task, algorithm)
         self.buildStatusBar()
         self.startAnimation()
         
@@ -170,28 +163,30 @@ class GraphWindow(tkinter.Toplevel):
     def buildFigure(self, task: str, algorithm: str):
         title, inLabel, outLabel=makeLabels(task, algorithm)
         
+        self.title(title)
+        
         self.figure, self.axis=matplotlib.pyplot.subplots(figsize=(10, 5))
         self.figure.patch.set_facecolor("#1e1e2e")
         self.axis.set_facecolor("#2a2a3e")
         
         self.lineDisturbance, = self.axis.plot(
-            [], [], color="#f38ba8", linewidth=2, label=inLabel
+            [], [], color=COLOUR_RED, linewidth=2, label=inLabel
         )
         
         self.lineOutput, = self.axis.plot(
-            [], [], color="#89b4fa", linewidth=2, label=outLabel
+            [], [], color=COLOUR_BUTTON_ACTIVE, linewidth=2, label=outLabel
         )
         
         self.axis.set_xlabel("Step", color=COLOUR_TEXT, fontsize=11, fontweight="bold")
         self.axis.set_ylabel("Value", color=COLOUR_TEXT, fontsize=11, fontweight="bold")
-        self.axis.set_title(title, color=COLOUR_TEXT, fontsize=11, fontweight="bold")
+        self.axis.set_title(title, color=COLOUR_TEXT, fontsize=13, fontweight="bold")
         self.axis.tick_params(colors=COLOUR_SUBTEXT)
         self.axis.spines[:].set_color(COLOUR_BORDER)
         self.axis.set_xlim(0, 100)
         self.axis.set_ylim(-250, 250)
         self.axis.grid(True, alpha=0.2, linestyle="--", color=COLOUR_BORDER)
 
-        legend = self.axis.legend(
+        self.axis.legend(
             loc="upper right", fontsize=9,
             facecolor=COLOUR_SURFACE, edgecolor=COLOUR_BORDER,
             labelcolor=COLOUR_TEXT,
@@ -199,6 +194,10 @@ class GraphWindow(tkinter.Toplevel):
 
         self.canvas = FigureCanvasTkAgg(self.figure, master=self)
         self.canvas.get_tk_widget().pack(fill=tkinter.BOTH, expand=True, padx=8, pady=8)
+
+        toolbar = NavigationToolbar2Tk(self.canvas, self)
+        toolbar.update()
+        toolbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
 
     def buildStatusBar(self):
         bar=tkinter.Frame(self, bg=COLOUR_BORDER, height=30)
@@ -210,104 +209,32 @@ class GraphWindow(tkinter.Toplevel):
         self.statusLabel=tkinter.Label(bar, text="Waiting for robot connection...", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
         self.statusLabel.pack(side=tkinter.LEFT)
         self.pointsLabel=tkinter.Label(bar, text="", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
-        self.pointsLabel.pack(side=tkinter.RIGHT, padx=8)
-    
-    def buildMazeFigure(self):
-        self.figure, self.axis=matplotlib.pyplot.subplots(figsize=(7, 7))
-        self.figure.patch.set_facecolor(COLOUR_BACKGROUND)
-        self.axis.set_facecolor(COLOUR_SURFACE)
-        self.axis.set_aspect("equal")
-        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13)
-        self.axis.set_xlabel("X (East →)", color=COLOUR_TEXT, fontsize=10)
-        self.axis.set_ylabel("Y (North ↑)", color=COLOUR_TEXT, fontsize=10)
-        self.axis.tick_params(colors=COLOUR_SUBTEXT)
-        
-        for spine in self.axis.spines.values():
-            spine.set_color(COLOUR_BORDER)
-            
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
-        self.canvas.get_tk_widget().pack(fill=tkinter.BOTH, expand=True, padx=8, pady=8)
-    
-    def drawMazeCell(self, x, y, walls, isCurrent, isStart):
-        fill=COLOUR_BUTTON_ACTIVE if isCurrent else (COLOUR_GREEN if isStart else COLOUR_SURFACE)
-        self.axis.add_patch(Rectangle((x, y), 1, 1, facecolor=fill, edgecolor=COLOUR_BORDER, linewidth=1, zorder=1))
-        textColor=COLOUR_BACKGROUND if (isCurrent or isStart) else COLOUR_TEXT
-        self.axis.text(x+0.5, y+0.5, f"({x},{y})", color=textColor, fontsize=6, ha="center", va="center", zorder=3)
-        
-        W="#cdd6f4"
-        lw=2
-        
-        if not (walls & 1):  # North wall
-            self.axis.add_line(Line2D([x, x+1], [y+1, y+1], color=W, linewidth=lw, zorder=2))
-        if not (walls & 2):  # East wall
-            self.axis.add_line(Line2D([x+1, x+1], [y, y+1], color=W, linewidth=lw, zorder=2))
-        if not (walls & 4):  # South wall
-            self.axis.add_line(Line2D([x, x+1], [y, y], color=W, linewidth=lw, zorder=2))
-        if not (walls & 8):  # West wall
-            self.axis.add_line(Line2D([x, x], [y, y+1], color=W, linewidth=lw, zorder=2))
-    
-    def updateFrameMaze(self, _frame):
-        cells=dict(self.receiver.cells)
-        current=self.receiver.currentPosition
-        
-        if not cells:
-            return
-        
-        self.axis.cla()
-        self.axis.set_facecolor(COLOUR_SURFACE)
-        self.axis.set_aspect("equal")
-        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13, fontweight="bold")
-        self.axis.set_xlabel("X (East →)", color=COLOUR_TEXT, fontsize=10)
-        self.axis.set_ylabel("Y (North ↑)", color=COLOUR_TEXT, fontsize=10)
-        self.axis.tick_params(colors=COLOUR_SUBTEXT)
-        
-        for spine in self.axis.spines.values():
-            spine.set_color(COLOUR_BORDER)
-            
-        for (x, y), walls in cells.items():
-            self.drawMazeCell(x, y, walls, isCurrent=(current==(x,y)), isStart=(x==0 and y==0))
-            
-        xs=[cx for (cx, _) in cells]
-        ys=[cy for (_, cy) in cells]
-        margin=1.5
-        
-        self.axis.set_xlim(min(xs)-margin, max(xs)+margin+1)
-        self.axis.set_ylim(min(ys)-margin, max(ys)+margin+1)
-        self.pointsLabel.config(text=f"Cells: {len(cells)}")
+        self.pointsLabel.pack(side=tkinter.RIGHT, padx=8)    
         
     def updateLabels(self, task: str, algorithm: str):
         title, inLabel, outLabel=makeLabels(task, algorithm)
+        self.title(title)
         self.axis.set_title(title, color=COLOUR_TEXT, fontsize=13, fontweight="bold")
-        if task != "MazeSolver":
-            self.lineDisturbance.set_label(inLabel)
-            self.lineOutput.set_label(outLabel)
-            self.axis.legend(
-                loc="upper right", fontsize=9,
-                facecolor=COLOUR_SURFACE, edgecolor=COLOUR_BORDER,
-                labelcolor=COLOUR_TEXT,
-            )
+        self.lineDisturbance.set_label(inLabel)
+        self.lineOutput.set_label(outLabel)
+        self.axis.legend(
+            loc="upper right", fontsize=9,
+            facecolor=COLOUR_SURFACE, edgecolor=COLOUR_BORDER,
+            labelcolor=COLOUR_TEXT,
+        )
     
     def setStatusConnected(self, ip: str):
         self.statusDot.config(fg=COLOUR_GREEN)
         self.statusLabel.config(text=f"Connected to robot at {ip}")
         
     def startAnimation(self):
-        if self.task == "MazeSolver":
-            self.animation = matplotlib.animation.FuncAnimation(
-                self.figure,
-                self.updateFrameMaze,
-                interval=300,         # update every 0.3s
-                blit=False,
-                cache_frame_data=False,
-            )
-        else:
-            self.animation = matplotlib.animation.FuncAnimation(
-                self.figure,
-                self.updateFrame,
-                interval=50,          # 20 FPS
-                blit=True,
-                cache_frame_data=False,
-            )
+        self.animation = matplotlib.animation.FuncAnimation(
+            self.figure,
+            self.updateFrame,
+            interval=50,         
+            blit=True,
+            cache_frame_data=False,
+        )
         self.canvas.draw()
     
     def updateFrame(self, _frame):
@@ -343,7 +270,118 @@ class GraphWindow(tkinter.Toplevel):
             self.onCloseCallBack()
         
         self.destroy()
+    
+class MazeMapWindow(tkinter.Toplevel):
+    def __init__(self, parent, receiver: DataReceiver, onClose=None):
+        super().__init__(parent)
+        self.title("Live Maze Map")
+        self.configure(background=COLOUR_BACKGROUND)
+        self.geometry("640x640")
+        self.resizable(True, True)
+        self.receiver=receiver
+        self.animation=None
+        self.onCloseCallBack=onClose
         
+        self.buildFigure()
+        self.buildStatusBar()
+        self.startAnimation()
+        
+        self.protocol("WM_DELETE_WINDOW", self.onClose)
+        
+    def buildFigure(self):
+        self.figure, self.axis=matplotlib.pyplot.subplots(figsize=(6, 6))
+        self.figure.patch.set_facecolor(COLOUR_BACKGROUND)
+        self.axis.set_facecolor(COLOUR_SURFACE)
+        self.axis.set_aspect("equal")
+        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13, fontweight="bold")
+        self.axis.set_xlabel("X", color=COLOUR_TEXT, fontsize=10)
+        self.axis.set_ylabel("Y", color=COLOUR_TEXT, fontsize=10)
+        self.axis.tick_params(colors=COLOUR_SUBTEXT)
+        
+        for spine in self.axis.spines.values():
+            spine.set_color(COLOUR_BORDER)
+            
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
+        self.canvas.get_tk_widget().pack(fill=tkinter.BOTH, expand=True, padx=8, pady=8)
+        
+    def buildStatusBar(self):
+        bar=tkinter.Frame(self, bg=COLOUR_BORDER, height=30)
+        bar.pack(fill=tkinter.X, side=tkinter.BOTTOM)
+        
+        self.cellsLabel=tkinter.Label(bar, text="Cells: 0", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
+        self.cellsLabel.pack(side=tkinter.RIGHT, padx=8)
+        
+        self.posLabel=tkinter.Label(bar, text="Position: (0, 0)", fg=COLOUR_SUBTEXT, bg=COLOUR_SURFACE, font=("Segoe UI", 9))
+        self.posLabel.pack(side=tkinter.LEFT, padx=8)
+    
+    def drawMazeCell(self, x, y, walls, isCurrent, isStart):
+        fill=COLOUR_BUTTON_ACTIVE if isCurrent else (COLOUR_GREEN if isStart else COLOUR_SURFACE)
+        self.axis.add_patch(Rectangle((x, y), 1, 1, facecolor=fill, edgecolor=COLOUR_BORDER, linewidth=1, zorder=1))
+        textColor=COLOUR_BACKGROUND if (isCurrent or isStart) else COLOUR_TEXT
+        self.axis.text(x+0.5, y+0.5, f"({x},{y})", color=textColor, fontsize=6, ha="center", va="center", zorder=3)
+        
+        W=COLOUR_TEXT
+        lw=2
+        
+        if not (walls & 1):  
+            self.axis.add_line(Line2D([x, x+1], [y+1, y+1], color=W, linewidth=lw, zorder=2))
+        if not (walls & 2):  
+            self.axis.add_line(Line2D([x+1, x+1], [y, y+1], color=W, linewidth=lw, zorder=2))
+        if not (walls & 4):  
+            self.axis.add_line(Line2D([x, x+1], [y, y], color=W, linewidth=lw, zorder=2))
+        if not (walls & 8):  
+            self.axis.add_line(Line2D([x, x], [y, y+1], color=W, linewidth=lw, zorder=2))
+    
+    def updateFrameMaze(self, _frame):
+        cells=dict(self.receiver.cells)
+        current=self.receiver.currentPosition
+        
+        if not cells:
+            return
+        
+        self.axis.cla()
+        self.axis.set_facecolor(COLOUR_SURFACE)
+        self.axis.set_aspect("equal")
+        self.axis.set_title("Maze Map - DFS", color=COLOUR_TEXT, fontsize=13, fontweight="bold")
+        self.axis.set_xlabel("X", color=COLOUR_TEXT, fontsize=10)
+        self.axis.set_ylabel("Y", color=COLOUR_TEXT, fontsize=10)
+        self.axis.tick_params(colors=COLOUR_SUBTEXT)
+        
+        for spine in self.axis.spines.values():
+            spine.set_color(COLOUR_BORDER)
+            
+        for (x, y), walls in cells.items():
+            self.drawMazeCell(x, y, walls, isCurrent=(current==(x,y)), isStart=(x==0 and y==0))
+            
+        xs=[cx for (cx, _) in cells]
+        ys=[cy for (_, cy) in cells]
+        margin=1.5
+        
+        self.axis.set_xlim(min(xs)-margin, max(xs)+margin+1)
+        self.axis.set_ylim(min(ys)-margin, max(ys)+margin+1)
+        self.cellsLabel.config(text=f"Cells: {len(cells)}")
+        self.posLabel.config(text=f"Position: ({current[0]}, {current[1]})")
+    
+    def startAnimation(self):
+        self.animation = matplotlib.animation.FuncAnimation(
+            self.figure,
+            self.updateFrameMaze,
+            interval=300,         
+            blit=False,
+            cache_frame_data=False,
+        )
+        self.canvas.draw()
+    
+    def onClose(self):
+        if self.animation:
+            self.animation.event_source.stop()
+        matplotlib.pyplot.close(self.figure)
+        
+        if self.onCloseCallBack:
+            self.onCloseCallBack()
+        
+        self.destroy()    
+    
 class LauncherApp(tkinter.Tk):
     def __init__(self):
         super().__init__()
@@ -354,7 +392,9 @@ class LauncherApp(tkinter.Tk):
         self.task=tkinter.StringVar(value="LaneKeeping")
         self.algorithm=tkinter.StringVar(value="PID")
         self.ev3Host=tkinter.StringVar(value="ev3dev.local")
+        self.showMazeMap=tkinter.BooleanVar(value=False)
         self.graphWindow=None
+        self.mazeMapWindow=None
         
         self.receiver=DataReceiver(LISTEN_PORT, MAX_POINTS)
         self.receiver.onConnect(self.handleConnect)
@@ -416,6 +456,37 @@ class LauncherApp(tkinter.Tk):
         
         tkinter.Frame(outer, height=16, bg=COLOUR_BACKGROUND).pack()
         
+        self.mazeCheckFrame=tkinter.Frame(outer, bg=COLOUR_BACKGROUND)
+        self.mazeCheckFrame.pack(fill=tkinter.X)
+        
+        tkinter.Label(
+            self.mazeCheckFrame,
+            text="Options:",
+            foreground=COLOUR_TEXT,
+            background=COLOUR_BACKGROUND,
+            font=("Segoe UI", 10, "bold"),
+            width=10,
+            anchor="w"
+        ).pack(side=tkinter.LEFT)
+        
+        self.mazeMapCheck=tkinter.Checkbutton(
+            self.mazeCheckFrame,
+            text="Show Live Maze Map",
+            variable=self.showMazeMap,
+            foreground=COLOUR_TEXT,
+            background=COLOUR_BACKGROUND,
+            activeforeground=COLOUR_TEXT,
+            activebackground=COLOUR_BACKGROUND,
+            selectcolor="#000000",
+            font=("Segoe UI", 10),
+            relief=tkinter.FLAT,
+            cursor="hand2",
+        )
+        
+        self.mazeMapCheck.pack(side=tkinter.LEFT, padx=4)
+        
+        tkinter.Frame(outer, height=16, bg=COLOUR_BACKGROUND).pack()
+        
         hostRow=tkinter.Frame(outer, bg=COLOUR_BACKGROUND)
         hostRow.pack(fill=tkinter.X)
         
@@ -459,7 +530,7 @@ class LauncherApp(tkinter.Tk):
             foreground=COLOUR_BACKGROUND,
             background=COLOUR_BUTTON_ACTIVE,
             activeforeground=COLOUR_BACKGROUND,
-            activebackground="#74c7ec",
+            activebackground="#03161f",
             font=("Segoe UI", 11, "bold"),
             relief=tkinter.FLAT,
             cursor="hand2",
@@ -580,12 +651,28 @@ class LauncherApp(tkinter.Tk):
             onClose=self.onGraphClose
         )
         
+        if task == "MazeSolver" and self.showMazeMap.get():
+            self.mazeMapWindow=MazeMapWindow(
+                self,
+                self.receiver,
+                onClose=self.onMazeMapClose
+            )
+        
         self.launchEV3()
     
     def onGraphClose(self):
         self.graphWindow=None
-        self.setStatus("Run finished — choose task/algorithm and click Open Live Graph", COLOUR_YELLOW)
         
+        if self.mazeMapWindow and tkinter.Toplevel.winfo_exists(self.mazeMapWindow):
+            self.mazeMapWindow.onClose()
+            
+        self.mazeMapWindow=None
+        
+        self.setStatus("Run finished — choose task/algorithm and click Start Robot", COLOUR_YELLOW)
+    
+    def onMazeMapClose(self):
+        self.mazeMapWindow=None    
+    
     def patchRobotFile(self, task: str, algorithm: str):
         robotPath=Path(__file__).with_name("fuzzy_robot.py")
 
