@@ -1,0 +1,803 @@
+LANE KEEPING-FuzzyRuleBased
+
+Black Threshold:6
+Crossing Threshold:7
+Min Difference:3
+Base Speed:90
+Turning Speed:60
+Emergency Speed:30
+
+Step 1 Left: 13 Right: 14 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 2 Left: 13 Right: 15 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 3 Left: 13 Right: 14 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 4 Left: 13 Right: 15 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 5 Left: 13 Right: 15 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 6 Left: 14 Right: 15 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 7 Left: 14 Right: 16 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 8 Left: 14 Right: 16 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 9 Left: 14 Right: 17 Output: -13.33333333333333
+Rules(2) PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 10 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 11 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 12 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 13 Left: 13 Right: 17 Output: -22.5
+Rules(4) PS & Z -> NS: 0.67, PS & P -> NM: 0.33, PL & Z -> NL: 0.33, PL & P -> NL: 0.33
+Step 14 Left: 13 Right: 17 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 15 Left: 13 Right: 16 Output: -5.0
+Rules(2) PS & N -> NS: 0.33, PS & Z -> NS: 0.67
+Step 16 Left: 12 Right: 16 Output: -22.5
+Rules(4) PS & Z -> NS: 0.67, PS & P -> NM: 0.33, PL & Z -> NL: 0.33, PL & P -> NL: 0.33
+Step 17 Left: 11 Right: 15 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 18 Left: 9 Right: 16 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 19 Left: 8 Right: 16 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 20 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 21 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 22 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 23 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 24 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 25 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 26 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 27 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 28 Left: 7 Right: 14 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 29 Left: 9 Right: 14 Output: -28.75
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.33, PL & N -> NM: 0.67, PL & Z -> NL: 0.33
+Step 30 Left: 10 Right: 14 Output: -22.5
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.67, PL & N -> NM: 0.33, PL & Z -> NL: 0.33
+Step 31 Left: 8 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 32 Left: 7 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 33 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 34 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 35 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 36 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 37 Left: 5 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 38 Left: 5 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 39 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 40 Left: 7 Right: 15 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 41 Left: 10 Right: 14 Output: -13.33333333333333
+Rules(2) PS & N -> NS: 0.67, PL & N -> NM: 0.33
+Step 42 Left: 11 Right: 15 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 43 Left: 11 Right: 15 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 44 Left: 11 Right: 15 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 45 Left: 10 Right: 15 Output: -33.75
+Rules(4) PS & Z -> NS: 0.33, PS & P -> NM: 0.33, PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 46 Left: 9 Right: 14 Output: -35.0
+Rules(2) PS & Z -> NS: 0.33, PL & Z -> NL: 0.67
+Step 47 Left: 8 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 48 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 49 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 50 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 51 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 52 Left: 4 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 53 Left: 5 Right: 13 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 54 Left: 7 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 55 Left: 9 Right: 14 Output: -28.75
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.33, PL & N -> NM: 0.67, PL & Z -> NL: 0.33
+Step 56 Left: 9 Right: 13 Output: -22.5
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.67, PL & N -> NM: 0.33, PL & Z -> NL: 0.33
+Step 57 Left: 7 Right: 14 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 58 Left: 6 Right: 13 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 59 Left: 6 Right: 13 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 60 Left: 5 Right: 13 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 61 Left: 4 Right: 14 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 62 Left: 4 Right: 14 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 63 Left: 5 Right: 13 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 64 Left: 5 Right: 13 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 65 Left: 6 Right: 14 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 66 Left: 7 Right: 14 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 67 Left: 8 Right: 14 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 68 Left: 8 Right: 14 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 69 Left: 7 Right: 13 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 70 Left: 5 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 71 Left: 5 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 72 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 73 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 74 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 75 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 76 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 77 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 78 Left: 5 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 79 Left: 6 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 80 Left: 7 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 81 Left: 8 Right: 14 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 82 Left: 9 Right: 15 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 83 Left: 8 Right: 14 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 84 Left: 5 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 85 Left: 5 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 86 Left: 3 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 87 Left: 3 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 88 Left: 3 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 89 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 90 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 91 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 92 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 93 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 94 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 95 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 96 Left: 4 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 97 Left: 4 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 98 Left: 5 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 99 Left: 5 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 100 Left: 6 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 101 Left: 6 Right: 16 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 102 Left: 7 Right: 16 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 103 Left: 9 Right: 16 Output: -36.66666666666667
+Rules(2) PL & N -> NM: 0.67, PL & Z -> NL: 0.33
+Step 104 Left: 9 Right: 16 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 105 Left: 8 Right: 16 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 106 Left: 6 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 107 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 108 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 109 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 110 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 111 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 112 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 113 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 114 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 115 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 116 Left: 5 Right: 18 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 117 Left: 5 Right: 18 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 118 Left: 5 Right: 18 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 119 Left: 6 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 120 Left: 7 Right: 15 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 121 Left: 7 Right: 15 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 122 Left: 7 Right: 14 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 123 Left: 7 Right: 14 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 124 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 125 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 126 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 127 Left: 3 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 128 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 129 Left: 3 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 130 Left: 3 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 131 Left: 3 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 132 Left: 3 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 133 Left: 4 Right: 14 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 134 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 135 Left: 4 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 136 Left: 5 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 137 Left: 5 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 138 Left: 6 Right: 15 Output: 45
+Rules(1) PL & Z -> NL: 1.0
+Step 139 Left: 8 Right: 15 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 140 Left: 9 Right: 15 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 141 Left: 10 Right: 15 Output: -33.75
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.33, PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 142 Left: 9 Right: 15 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 143 Left: 6 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 144 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 145 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 146 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 147 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 148 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 149 Left: 7 Right: 16 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 150 Left: 9 Right: 16 Output: -36.66666666666667
+Rules(2) PL & N -> NM: 0.67, PL & Z -> NL: 0.33
+Step 151 Left: 10 Right: 16 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 152 Left: 8 Right: 16 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 153 Left: 6 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 154 Left: 5 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 155 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 156 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 157 Left: 5 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 158 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 159 Left: 6 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 160 Left: 9 Right: 16 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 161 Left: 10 Right: 16 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 162 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & N -> NS: 1.0
+Step 163 Left: 11 Right: 16 Output: -33.75
+Rules(4) PS & Z -> NS: 0.33, PS & P -> NM: 0.33, PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 164 Left: 11 Right: 16 Output: -35.0
+Rules(2) PS & Z -> NS: 0.33, PL & Z -> NL: 0.67
+Step 165 Left: 11 Right: 16 Output: -35.0
+Rules(2) PS & Z -> NS: 0.33, PL & Z -> NL: 0.67
+Step 166 Left: 9 Right: 16 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 167 Left: 8 Right: 16 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 168 Left: 6 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 169 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 170 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 171 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 172 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 173 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 174 Left: 4 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 175 Left: 6 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 176 Left: 7 Right: 15 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 177 Left: 10 Right: 15 Output: -21.66666666666667
+Rules(2) PS & N -> NS: 0.33, PL & N -> NM: 0.67
+Step 178 Left: 13 Right: 15 Output: -3.333333333333333
+Rules(2) ZE & N -> ZE: 0.33, PS & N -> NS: 0.67
+Step 179 Left: 12 Right: 16 Output: -28.75
+Rules(4) PS & Z -> NS: 0.33, PS & P -> NM: 0.67, PL & Z -> NL: 0.33, PL & P -> NL: 0.33
+Step 180 Left: 12 Right: 16 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 181 Left: 11 Right: 17 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 182 Left: 9 Right: 17 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 183 Left: 7 Right: 17 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 184 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 185 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 186 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 187 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 188 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 189 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 190 Left: 4 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 191 Left: 5 Right: 16 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 192 Left: 5 Right: 17 Output: 45
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 193 Left: 7 Right: 16 Output: -43.33333333333333
+Rules(2) PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 194 Left: 10 Right: 16 Output: -30.0
+Rules(1) PL & N -> NM: 1.0
+Step 195 Left: 11 Right: 16 Output: -33.75
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.33, PL & N -> NM: 0.33, PL & Z -> NL: 0.67
+Step 196 Left: 10 Right: 15 Output: -35.0
+Rules(2) PS & Z -> NS: 0.33, PL & Z -> NL: 0.67
+Step 197 Left: 8 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 198 Left: 7 Right: 14 Output: -50.0
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 199 Left: 6 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 200 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 201 Left: 4 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 202 Left: 4 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 203 Left: 5 Right: 15 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 204 Left: 5 Right: 14 Output: 45
+Rules(2) PL & Z -> NL: 0.67, PL & P -> NL: 0.33
+Step 205 Left: 7 Right: 14 Output: -50.0
+Rules(1) PL & Z -> NL: 1.0
+Step 206 Left: 10 Right: 15 Output: -28.75
+Rules(4) PS & N -> NS: 0.33, PS & Z -> NS: 0.33, PL & N -> NM: 0.67, PL & Z -> NL: 0.33
+Step 207 Left: 13 Right: 14 Output: -1.666666666666667
+Rules(2) ZE & N -> ZE: 0.67, PS & N -> NS: 0.33
+Step 208 Left: 12 Right: 15 Output: -21.66666666666667
+Rules(2) PS & Z -> NS: 0.33, PS & P -> NM: 0.67
+Step 209 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 210 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 211 Left: 11 Right: 16 Output: -33.75
+Rules(4) PS & Z -> NS: 0.33, PS & P -> NM: 0.33, PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 212 Left: 11 Right: 16 Output: -35.0
+Rules(2) PS & Z -> NS: 0.33, PL & Z -> NL: 0.67
+Step 213 Left: 10 Right: 17 Output: -50.0
+Rules(2) PL & Z -> NL: 0.33, PL & P -> NL: 0.67
+Step 214 Left: 8 Right: 18 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 215 Left: 7 Right: 23 Output: -50.0
+Rules(1) PL & P -> NL: 1.0
+Step 216 Left: 4 Right: 20 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 217 Left: 3 Right: 19 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 218 Left: 3 Right: 19 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 219 Left: 3 Right: 19 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 220 Left: 3 Right: 19 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 221 Left: 3 Right: 18 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 222 Left: 4 Right: 19 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 223 Left: 6 Right: 18 Output: 45
+Rules(1) PL & P -> NL: 1.0
+Step 224 Left: 10 Right: 18 Output: -30.0
+Rules(1) PL & N -> NM: 1.0
+Step 225 Left: 14 Right: 18 Output: -13.33333333333333
+Rules(2) PS & N -> NS: 0.67, PL & N -> NM: 0.33
+Step 226 Left: 15 Right: 18 Output: -5.0
+Rules(2) PS & N -> NS: 0.33, PS & Z -> NS: 0.67
+Step 227 Left: 15 Right: 18 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 228 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 229 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 230 Left: 15 Right: 16 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.67, ZE & Z -> ZE: 0.33, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 231 Left: 15 Right: 16 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 232 Left: 15 Right: 16 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 233 Left: 14 Right: 15 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 234 Left: 14 Right: 14 Output: 0.0
+Rules(2) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67
+Step 235 Left: 14 Right: 14 Output: 0.0
+Rules(1) ZE & Z -> ZE: 1.0
+Step 236 Left: 13 Right: 14 Output: -8.75
+Rules(4) ZE & Z -> ZE: 0.67, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.33, PS & P -> NM: 0.33
+Step 237 Left: 13 Right: 14 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 238 Left: 13 Right: 15 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 239 Left: 12 Right: 14 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 240 Left: 13 Right: 14 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 241 Left: 12 Right: 14 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 242 Left: 12 Right: 13 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 243 Left: 11 Right: 13 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 244 Left: 11 Right: 12 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 245 Left: 11 Right: 11 Output: 0.0
+Rules(2) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67
+Step 246 Left: 11 Right: 10 Output: 1.666666666666667
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67
+Step 247 Left: 11 Right: 9 Output: 3.333333333333333
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 248 Left: 11 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 249 Left: 11 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 250 Left: 11 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 251 Left: 11 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 252 Left: 12 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 253 Left: 12 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 254 Left: 12 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 255 Left: 12 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 256 Left: 13 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 257 Left: 13 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 258 Left: 13 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 259 Left: 13 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 260 Left: 14 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 261 Left: 13 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 262 Left: 14 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 263 Left: 15 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 264 Left: 15 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 265 Left: 15 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 266 Left: 15 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 267 Left: 15 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 268 Left: 15 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 269 Left: 15 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 270 Left: 15 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.33, NS & Z -> PS: 0.67, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 271 Left: 15 Right: 7 Output: 30.0
+Rules(1) NL & N -> PM: 1.0
+Step 272 Left: 15 Right: 9 Output: 50.0
+Rules(2) NL & Z -> PL: 0.33, NL & P -> PL: 0.67
+Step 273 Left: 15 Right: 12 Output: 30.0
+Rules(1) NS & P -> PM: 1.0
+Step 274 Left: 15 Right: 10 Output: 28.75
+Rules(4) NL & N -> PM: 0.67, NL & Z -> PL: 0.33, NS & N -> PS: 0.33, NS & Z -> PS: 0.33
+Step 275 Left: 15 Right: 7 Output: 30.0
+Rules(1) NL & N -> PM: 1.0
+Step 276 Left: 14 Right: 5 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 277 Left: 14 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 278 Left: 13 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 279 Left: 14 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 280 Left: 14 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 281 Left: 13 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 282 Left: 14 Right: 5 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 283 Left: 14 Right: 5 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 284 Left: 14 Right: 7 Output: 50.0
+Rules(2) NL & Z -> PL: 0.67, NL & P -> PL: 0.33
+Step 285 Left: 14 Right: 10 Output: 36.66666666666667
+Rules(2) NL & P -> PL: 0.33, NS & P -> PM: 0.67
+Step 286 Left: 14 Right: 11 Output: 13.33333333333333
+Rules(2) NS & Z -> PS: 0.67, NS & P -> PM: 0.33
+Step 287 Left: 13 Right: 10 Output: 5.0
+Rules(1) NS & Z -> PS: 1.0
+Step 288 Left: 13 Right: 7 Output: 30.0
+Rules(1) NL & N -> PM: 1.0
+Step 289 Left: 12 Right: 7 Output: 33.75
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 290 Left: 12 Right: 5 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 291 Left: 11 Right: 4 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 292 Left: 11 Right: 4 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 293 Left: 11 Right: 4 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 294 Left: 11 Right: 4 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 295 Left: 11 Right: 5 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 296 Left: 11 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.67, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.33
+Step 297 Left: 11 Right: 9 Output: 20.0
+Rules(2) NS & P -> PM: 0.67, ZE & P -> ZE: 0.33
+Step 298 Left: 11 Right: 12 Output: -10.0
+Rules(2) ZE & P -> ZE: 0.67, PS & P -> NM: 0.33
+Step 299 Left: 11 Right: 13 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 300 Left: 11 Right: 13 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 301 Left: 11 Right: 14 Output: -13.33333333333333
+Rules(2) PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 302 Left: 11 Right: 14 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 303 Left: 11 Right: 14 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 304 Left: 11 Right: 14 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 305 Left: 11 Right: 14 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 306 Left: 11 Right: 14 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 307 Left: 11 Right: 15 Output: -22.5
+Rules(4) PS & Z -> NS: 0.67, PS & P -> NM: 0.33, PL & Z -> NL: 0.33, PL & P -> NL: 0.33
+Step 308 Left: 12 Right: 16 Output: -20.0
+Rules(2) PS & Z -> NS: 0.67, PL & Z -> NL: 0.33
+Step 309 Left: 13 Right: 16 Output: -5.0
+Rules(2) PS & N -> NS: 0.33, PS & Z -> NS: 0.67
+Step 310 Left: 14 Right: 17 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 311 Left: 15 Right: 17 Output: -3.333333333333333
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33, PS & N -> NS: 0.33, PS & Z -> NS: 0.67
+Step 312 Left: 16 Right: 17 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 313 Left: 15 Right: 17 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 314 Left: 15 Right: 17 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 315 Left: 14 Right: 16 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 316 Left: 14 Right: 15 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 317 Left: 13 Right: 15 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 318 Left: 13 Right: 15 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 319 Left: 13 Right: 15 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 320 Left: 12 Right: 15 Output: -13.33333333333333
+Rules(2) PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 321 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 322 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 323 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 324 Left: 12 Right: 15 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 325 Left: 12 Right: 14 Output: -3.333333333333333
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33, PS & N -> NS: 0.33, PS & Z -> NS: 0.67
+Step 326 Left: 12 Right: 12 Output: 0.0
+Rules(2) ZE & N -> ZE: 0.67, ZE & Z -> ZE: 0.33
+Step 327 Left: 12 Right: 10 Output: 3.333333333333333
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 328 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 329 Left: 12 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 330 Left: 12 Right: 3 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 331 Left: 12 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 332 Left: 12 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 333 Left: 12 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 334 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 335 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 336 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 337 Left: 11 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 338 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 339 Left: 11 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 340 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 341 Left: 11 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 342 Left: 11 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 343 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 344 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 345 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 346 Left: 12 Right: 6 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 347 Left: 13 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 348 Left: 13 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 349 Left: 13 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 350 Left: 13 Right: 4 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 351 Left: 13 Right: 5 Output: -45
+Rules(4) NS & N -> PS: 0.67, NS & Z -> PS: 0.33, ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.33
+Step 352 Left: 13 Right: 8 Output: 21.66666666666667
+Rules(2) NL & N -> PM: 0.67, NS & N -> PS: 0.33
+Step 353 Left: 13 Right: 10 Output: 21.66666666666667
+Rules(2) NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 354 Left: 12 Right: 12 Output: 0.0
+Rules(1) ZE & P -> ZE: 1.0
+Step 355 Left: 12 Right: 13 Output: -8.75
+Rules(4) ZE & Z -> ZE: 0.67, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.33, PS & P -> NM: 0.33
+Step 356 Left: 12 Right: 13 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 357 Left: 12 Right: 14 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 358 Left: 12 Right: 14 Output: -3.333333333333333
+Rules(2) ZE & Z -> ZE: 0.33, PS & Z -> NS: 0.67
+Step 359 Left: 12 Right: 13 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 360 Left: 13 Right: 7 Output: 30.0
+Rules(1) NL & N -> PM: 1.0
+Step 361 Left: 12 Right: 3 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 362 Left: 11 Right: 3 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 363 Left: 10 Right: 3 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 364 Left: 10 Right: 4 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 365 Left: 9 Right: 5 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 366 Left: 10 Right: 5 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 367 Left: 10 Right: 6 Output: -45
+Rules(1) NL & N -> PM: 1.0
+Step 368 Left: 11 Right: 7 Output: 28.75
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 369 Left: 12 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 370 Left: 13 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 371 Left: 12 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 372 Left: 13 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 373 Left: 13 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 374 Left: 13 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 375 Left: 13 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 376 Left: 12 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 377 Left: 11 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 378 Left: 10 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 379 Left: 9 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 380 Left: 8 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 381 Left: 8 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 382 Left: 7 Right: 6 Output: -45
+Rules(4) NL & Z -> PL: 0.33, NL & P -> PL: 0.33, NS & Z -> PS: 0.33, NS & P -> PM: 0.67
+Step 383 Left: 6 Right: 6 Output: 0.0
+Rules(1) ZE & P -> ZE: 1.0
+Step 384 Left: 5 Right: 6 Output: -8.75
+Rules(4) ZE & Z -> ZE: 0.67, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.33, PS & P -> NM: 0.33
+Step 385 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 386 Left: 4 Right: 6 Output: -10.0
+Rules(4) ZE & Z -> ZE: 0.33, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 387 Left: 3 Right: 6 Output: -13.33333333333333
+Rules(2) PS & Z -> NS: 0.67, PS & P -> NM: 0.33
+Step 388 Left: 3 Right: 6 Output: -5.0
+Rules(1) PS & Z -> NS: 1.0
+Step 389 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(4) ZE & N -> ZE: 0.67, ZE & Z -> ZE: 0.33, PS & N -> NS: 0.33, PS & Z -> NS: 0.33
+Step 390 Left: 6 Right: 6 Output: 0.0
+Rules(2) ZE & N -> ZE: 0.33, ZE & Z -> ZE: 0.67
+Step 391 Left: 5 Right: 6 Output: -8.75
+Rules(4) ZE & Z -> ZE: 0.67, ZE & P -> ZE: 0.33, PS & Z -> NS: 0.33, PS & P -> NM: 0.33
+Step 392 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 393 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 394 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 395 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 396 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
+Step 397 Left: 5 Right: 6 Output: -1.666666666666667
+Rules(2) ZE & Z -> ZE: 0.67, PS & Z -> NS: 0.33
