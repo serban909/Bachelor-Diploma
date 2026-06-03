@@ -8,41 +8,17 @@
 \section{Approached Domains}
 \label{sec:approached-domains}
 
-This project lies at the intersection of three engineering domains: \textit{embedded control systems}, \textit{fuzzy logic} and \textit{autonomous mobile robotics}. The physical platform is the LEGO Mindstorms EV3, a widely used educational robot that provides servomotors, colour sensors, ultrasonic distance sensors and a gyroscope — all programmable through the Pybricks MicroPython environment.
-
-The control problem is formulated as the reduction of a measured \textit{disturbance} (the deviation from an ideal state) by computing a corrective output at each control cycle. Three families of controllers are explored: a classical PID controller, a Fuzzy PI controller that adapts its gains in real time, and a pure Fuzzy Rule-Based controller that maps the disturbance and its trend directly to the motor command through a Mamdani-type inference system. Each family is applied to two distinct tasks — lane keeping and maze solving — demonstrating that the same algorithmic structure can regulate fundamentally different physical quantities (turn rate and forward speed) when configured with appropriate parameters.
-
 % ---------- 1.2 ----------
 \section{Context and Motivation}
 \label{sec:context}
-
-Previous diploma projects at UPT involving the LEGO Mindstorms EV3 focused on single-line following, where a single colour sensor tracked a black line on a white surface and the controller corrected the steering whenever the sensor reading deviated from the expected value. While effective as an introductory exercise, this approach has two limitations: the robot cannot navigate a bounded lane (two-sided track), and the controller gains are fixed regardless of how far the robot has drifted.
-
-This project extends the problem in two directions. First, the lane keeping task replaces the single-line follower with a \textit{dual-sensor, dual-boundary} configuration in which the robot drives between two parallel black lines on a white surface. The disturbance is defined as the difference between the left and right sensor readings, and the controller must keep this difference close to zero. Second, the maze solving task introduces a grid-based labyrinth that the robot must explore autonomously using a Depth-First Search algorithm, while the same control algorithms regulate the forward approach speed.
-
-The motivation for introducing fuzzy logic is the observation that a fixed-gain PID controller applies the same proportional response regardless of whether the robot is 1\,mm or 10\,mm off-centre. A human driver, by contrast, would steer gently near the centre and aggressively near the edge. Fuzzy logic provides a formal framework to express this graduated behaviour, and comparing the three control strategies quantitatively is the central contribution of this work.
 
 % ---------- 1.3 ----------
 \section{General Specifications}
 \label{sec:specifications}
 
-The project meets the following specifications:
-
-\begin{itemize}
-    \item Two autonomous tasks: lane keeping between two black lines and maze solving in a grid-based labyrinth.
-    \item Three interchangeable control algorithms: PID, Fuzzy PI and Fuzzy Rule-Based, selectable at startup through a single configuration variable.
-    \item Real-time WiFi telemetry streaming of the control variables (disturbance, output, active rules) to a PC for live monitoring and post-run analysis.
-    \item Object-oriented, SOLID-compliant software architecture in Pybricks MicroPython, allowing new algorithms or tasks to be added without modifying existing code.
-    \item Quantitative evaluation through metrics: trajectory smoothness, crossing count, average speed, and rule activation statistics.
-\end{itemize}
-
 % ---------- 1.4 ----------
 \section{Main Results}
 \label{sec:main-results}
-
-The experimental evaluation shows that the Fuzzy Rule-Based controller achieves the smoothest trajectory in the lane keeping task, with fewer oscillations than the PID controller and faster recovery from disturbances than the Fuzzy PI controller. The trend input allows the Fuzzy Rule-Based controller to moderate its corrections when the robot is already recovering, which eliminates the overshoot oscillations characteristic of the PID. In the maze solver, all three algorithms successfully regulate the forward speed, with the PID offering the most predictable deceleration curve and the Fuzzy Rule-Based providing the most adaptive response to variable corridor lengths.
-
-The DFS-based maze solver successfully explores every reachable cell in the test maze and returns to the starting position, using gyroscope-guided turning and side-sensor corridor centering to maintain alignment within the grid.
 
 % ---------- 1.5 ----------
 \section{Structure of the Project}
@@ -51,9 +27,9 @@ The DFS-based maze solver successfully explores every reachable cell in the test
 The remainder of this work is organized as follows:
 
 \begin{itemize}
-    \item \textbf{Chapter~\ref{ch:state-of-art}} presents the theoretical background for PID control and fuzzy logic systems, with references to the foundational literature.
-    \item \textbf{Chapter~\ref{ch:general-description}} provides a high-level system architecture diagram and describes the information flow between the robot, the control algorithms, and the telemetry interface.
+    \item \textbf{Chapter~\ref{ch:state-of-art}}
+    \item \textbf{Chapter~\ref{ch:general-description}}
     \item \textbf{Chapter~\ref{ch:implementation}} is the core of this work. It documents the implementation of each software module: the lane keeping controller (Section~\ref{sec:lane-keeping}), the maze solver (Section~\ref{sec:maze-solver}), the telemetry interface (Section~\ref{sec:ui}), and the object-oriented architecture (Section~\ref{sec:oop}).
-    \item \textbf{Chapter~\ref{ch:results}} presents the experimental results: comparative plots, performance tables and analysis of the three control strategies.
-    \item \textbf{Chapter~\ref{ch:conclusions}} summarizes the contributions, draws conclusions, and outlines directions for future development.
+    \item \textbf{Chapter~\ref{ch:results}} 
+    \item \textbf{Chapter~\ref{ch:conclusions}} 
 \end{itemize}

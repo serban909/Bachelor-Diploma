@@ -7,44 +7,12 @@
 \section{Conclusions}
 \label{sec:conclusions}
 
-This project demonstrated that fuzzy logic provides a viable and in several respects superior alternative to classical PID control for autonomous mobile robot navigation. By implementing and comparing three control strategies — PID, Fuzzy PI and Fuzzy Rule-Based — on the same hardware platform and the same physical tracks, the following conclusions can be drawn:
-
-The PID controller offers the simplest implementation and the most predictable linear response. Its fixed gains produce a proportional steering command that is adequate for moderate disturbances, but leads to oscillatory behaviour near the lane centre (where the gains are too aggressive for the small error) and sluggish recovery at large disturbances (where the gains are insufficient).
-
-The Fuzzy PI controller addresses this limitation by dynamically scaling the proportional and integral gains according to the magnitude of the disturbance. Near the centre, the gains are reduced by 20–30\%, producing a smoother trajectory. Far from the centre, the gains are boosted by 20–30\%, enabling faster recovery. The transition between regimes is smooth and continuous, governed by the overlapping triangular membership functions.
-
-The Fuzzy Rule-Based controller eliminates the PI structure entirely and maps the disturbance and its rate of change directly to a turn rate through 15 human-readable rules. The addition of the trend input enables anticipatory control: the correction is moderated when the robot is already recovering, which eliminates the overshoot oscillations that affect both the PID and the Fuzzy PI. This controller achieved the smoothest trajectory in the lane keeping task.
-
-For the maze solving task, all three algorithms successfully regulated the forward speed during cell-to-cell driving, with the DFS strategy ensuring complete exploration of the maze. The gyroscope-guided turning and side-sensor corridor centering proved essential for maintaining grid alignment over multiple successive turns.
-
-The object-oriented architecture, designed around the SOLID principles, enabled the addition of new algorithms (Fuzzy PI, then Fuzzy Rule-Based) without modifying any existing controller code. The same algorithm classes were reused across both tasks by simply changing the configuration parameters — a practical validation of the dependency inversion and Liskov substitution principles.
-
-
 \section{Synthesis of Contributions}
 \label{sec:contributions}
 
 The main contributions of this project are:
 
-\begin{itemize}
-    \item Design and implementation of a dual-sensor lane keeping system with a three-tier safety architecture (emergency override, dead-band tolerance, algorithm regulation).
-    \item Implementation and comparative evaluation of three control strategies (PID, Fuzzy PI, Fuzzy Rule-Based) on the same physical platform with quantitative metrics.
-    \item Design of a 15-rule Mamdani fuzzy controller with two inputs (disturbance and trend) that achieves smoother trajectories than the PID through anticipatory correction.
-    \item Geometric derivation of all membership function formulas from similar right triangles, providing an accessible mathematical foundation.
-    \item Implementation of a DFS-based maze solver with gyro-guided turns, side-sensor centering, and trapezoidal distance integration for accurate cell-to-cell navigation.
-    \item A SOLID-compliant object-oriented architecture that allows algorithms and tasks to be interchanged at runtime through a factory pattern.
-    \item Real-time WiFi telemetry streaming for live monitoring and post-run quantitative analysis.
-\end{itemize}
-
-
 \section{Perspectives for Development}
 \label{sec:perspectives}
 
 Several directions for future development arise from this work:
-
-\begin{itemize}
-    \item \textbf{Automatic tuning:} the membership function boundaries and rule table were hand-tuned in this project. A genetic algorithm or particle swarm optimizer could be used to evolve optimal boundaries and rules automatically, using the Mean Absolute Disturbance as the fitness function.
-    \item \textbf{Adaptive rules:} the Fuzzy Rule-Based controller uses a static rule table. An online learning mechanism (e.g.\ reinforcement learning on the rule consequents) could allow the controller to adapt its rules to changing track conditions during operation.
-    \item \textbf{Maze solver path optimization:} the current DFS explores every cell but does not compute the shortest path. After exploration is complete, the maze map could be used to compute the optimal path using Dijkstra's or A* algorithm, and the robot could then drive the shortest route.
-    \item \textbf{Computer vision:} replacing the colour and ultrasonic sensors with a camera would enable richer perception (recognizing intersections, signs, obstacles) and open the door to image-based fuzzy controllers.
-    \item \textbf{Multi-robot coordination:} the WiFi streaming infrastructure could be extended to coordinate multiple robots exploring different sections of the maze simultaneously, partitioning the search space for faster coverage.
-\end{itemize}
