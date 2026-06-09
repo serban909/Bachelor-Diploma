@@ -30,11 +30,7 @@ def initializeConfiguration(task, algorithm):
             "RightColorSensor":   Port.S3,
             "BlackThreshold":     6,
             "CrossingThreshold":  7,
-            "MinDifference":      3,
-            "BaseSpeed":          90,
-            "TurningSpeed":       60,
-            "EmergencySpeed":     30,
-            "EmergencyTurnSpeed": 45,
+            "BaseSpeed":          20,
             "StopConfirmCount":   1,
             "LogInterval":        1,
         }
@@ -47,11 +43,12 @@ def initializeConfiguration(task, algorithm):
             "CellDistanceNS":          278,
             "CellDistanceEW":          278,
             "OpenPassageThreshold":    90,
-            "ObstacleThreshold":       30,
+            "ObstacleThreshold":       35,
             "TargetForwardDistance":   60,
-            "BaseSpeed":               90,
-            "MinSpeed":                30,
-            "HeadingThreshold":        3,
+            "BaseSpeed":               60,
+            "MinSpeed":                20,
+            "TurnRate":                45,
+            "HeadingThreshold":        5,
             "CenteringThreshold":      20,
             "CenteringGain":           0.5,
             "CorrectionClamp":         30,
@@ -63,9 +60,9 @@ def initializeConfiguration(task, algorithm):
     if algorithm == "PID":
         if task == "LaneKeeping":
             algorithmConfiguration={
-                "Kp":          0.8,
-                "Ki":          0.05,
-                "Kd":          0.01,
+                "Kp":          6.3,
+                "Ki":          0.3,
+                "Kd":          1.0,
                 "MinOutput":   -100,
                 "MaxOutput":   100,
                 "IntegralMin": -500.0,
@@ -74,8 +71,8 @@ def initializeConfiguration(task, algorithm):
         elif task == "MazeSolver":
             algorithmConfiguration={
                 "Kp":          0.06,
-                "Ki":          0.01,
-                "Kd":          0.0,
+                "Ki":          0.3,
+                "Kd":          1.0,
                 "MinOutput":   30,
                 "MaxOutput":   90,
                 "IntegralMin": 0.0,
@@ -84,8 +81,8 @@ def initializeConfiguration(task, algorithm):
     elif algorithm == "FuzzyPI":
         if task == "LaneKeeping":
             algorithmConfiguration={
-                "BaseKP":            0.8,
-                "BaseKI":            0.05,
+                "BaseKP":            6.3,
+                "BaseKI":            0.3,
                 "SmallDisturbance":  3.0,
                 "MediumDisturbance": 6.0,
                 "LargeDisturbance":  10.0,
@@ -102,7 +99,7 @@ def initializeConfiguration(task, algorithm):
         elif task == "MazeSolver":
             algorithmConfiguration={
                 "BaseKP":            0.06,
-                "BaseKI":            0.001,
+                "BaseKI":            0.3,
                 "SmallDisturbance":  10.0,
                 "MediumDisturbance": 20.0,
                 "LargeDisturbance":  30.0,
@@ -131,22 +128,22 @@ def initializeConfiguration(task, algorithm):
                 # output indices: 0=NL  1=NM  2=NS  3=ZE  4=PS  5=PM  6=PL
                 
                 "Rules": [
-                        (0, 0, 5),  # R1:  NL & N  -> PM
-                        (0, 1, 6),  # R2:  NL & Z  -> PL
-                        (0, 2, 6),  # R3:  NL & P  -> PL
-                        (1, 0, 4),  # R4:  NS & N  -> PS
-                        (1, 1, 4),  # R5:  NS & Z  -> PS
-                        (1, 2, 5),  # R6:  NS & P  -> PM
-                        (2, 0, 3),  # R7:  ZE & N  -> ZE
-                        (2, 1, 3),  # R8:  ZE & Z  -> ZE
-                        (2, 2, 3),  # R9:  ZE & P  -> ZE
-                        (3, 0, 2),  # R10: PS & N  -> NS
-                        (3, 1, 2),  # R11: PS & Z  -> NS
-                        (3, 2, 1),  # R12: PS & P  -> NM
-                        (4, 0, 1),  # R13: PL & N  -> NM
-                        (4, 1, 0),  # R14: PL & Z  -> NL
-                        (4, 2, 0),  # R15: PL & P  -> NL
-                    ],
+                    (0, 0, 1),  # R1:  NL & N  -> NM
+                    (0, 1, 0),  # R2:  NL & Z  -> NL
+                    (0, 2, 0),  # R3:  NL & P  -> NL
+                    (1, 0, 2),  # R4:  NS & N  -> NS
+                    (1, 1, 2),  # R5:  NS & Z  -> NS
+                    (1, 2, 1),  # R6:  NS & P  -> NM
+                    (2, 0, 3),  # R7:  ZE & N  -> ZE
+                    (2, 1, 3),  # R8:  ZE & Z  -> ZE
+                    (2, 2, 3),  # R9:  ZE & P  -> ZE
+                    (3, 0, 4),  # R10: PS & N  -> PS
+                    (3, 1, 4),  # R11: PS & Z  -> PS
+                    (3, 2, 5),  # R12: PS & P  -> PM
+                    (4, 0, 5),  # R13: PL & N  -> PM
+                    (4, 1, 6),  # R14: PL & Z  -> PL
+                    (4, 2, 6),  # R15: PL & P  -> PL
+                ],
             }
         elif task == "MazeSolver":
             algorithmConfiguration={
@@ -215,25 +212,10 @@ class WifiStreamer:
             
 class FileLogger:
     def __init__(self, label):
-        self.filename=self.uniqueName(label)
+        self.filename=label+".csv"
         self.file=open(self.filename, "w")
         self.file.write("Step,Disturbance,Output\n")
         print("Logging to file: "+self.filename)
-    
-    def uniqueName(self, label):
-        name=label+".csv"
-        index=2
-        try:
-            open(name, "r").close()
-            while True:
-                name=label+"("+str(index)+")"+".csv"
-                try:
-                    open(name, "r").close()
-                    index+=1
-                except OSError:
-                    return name
-        except OSError:
-            return name
         
     def log(self, step, disturbance, output):
         self.file.write(str(step)+","+str(disturbance)+","+str(output)+"\n")
@@ -667,11 +649,7 @@ class LaneKeepingController(Controller):
         self.rightSensor=ColorSensor(configuration["RightColorSensor"])
         self.blackThreshold=configuration["BlackThreshold"]
         self.crossingThreshold=configuration["CrossingThreshold"]
-        self.minDifference=configuration["MinDifference"]
         self.baseSpeed=configuration["BaseSpeed"]
-        self.turningSpeed=configuration["TurningSpeed"]
-        self.emergencySpeed=configuration["EmergencySpeed"]
-        self.emergencyTurnSpeed=configuration["EmergencyTurnSpeed"]
         self.stopConfirmCount=configuration["StopConfirmCount"]
         self.logInterval=configuration["LogInterval"]
         
@@ -685,24 +663,7 @@ class LaneKeepingController(Controller):
         print("\nLANE KEEPING-"+algorithm+"\n")
         print("Black Threshold:"+ str(self.blackThreshold))
         print("Crossing Threshold:"+ str(self.crossingThreshold))
-        print("Min Difference:"+ str(self.minDifference))
         print("Base Speed:"+ str(self.baseSpeed))
-        print("Turning Speed:"+ str(self.turningSpeed))
-        print("Emergency Speed:"+ str(self.emergencySpeed)+"\n")
-        
-    def decideAction(self, leftValue, rightValue, disturbance, dt):
-        if leftValue<self.crossingThreshold and rightValue>=self.crossingThreshold:
-            return self.emergencySpeed, self.emergencyTurnSpeed
-        
-        if rightValue<self.crossingThreshold and leftValue>=self.crossingThreshold:
-            return self.emergencySpeed, -self.emergencyTurnSpeed
-        
-        if abs(disturbance)<=self.minDifference and isinstance(self.algorithm, (PIDAlgorithm, FuzzyPIAlgorithm)):
-            return self.baseSpeed, 0
-        
-        disturbance, turnRate=self.algorithm.compute(0, disturbance, dt)
-        
-        return self.turningSpeed, turnRate
     
     def run(self):
         self.printHeader(self.algorithmLabel())
@@ -728,28 +689,24 @@ class LaneKeepingController(Controller):
                         self.ev3.speaker.beep()
                         print("\nBoth sensors on line for "+str(self.stopConfirmCount)+" consecutive steps. Stopping.")
                         break
-                    
-                    self.robot.drive(10, 0)
+
                     wait(20)
                     continue
                 else:
                     bothSensorsOnLineCount=0
                     
-                disturbance=leftValue-rightValue
-                speed, turnRate=self.decideAction(leftValue, rightValue, disturbance, dt)
+                difference=leftValue-rightValue
+                disturbance, turnRate=self.algorithm.compute(0, difference, dt)
+                
                 self.streamer.send(self.step, disturbance, turnRate)
                 self.logger.log(self.step, disturbance, turnRate)
-                
                 if step%self.logInterval==0:
-                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue))
+                    print("Step "+str(step)+" Left: "+str(leftValue)+" Right: "+str(rightValue) +" Disturbance: "+str(disturbance)+" TurnRate: "+str(turnRate))
                     if isinstance(self.algorithm, FuzzyRuleBased):
                         print(self.algorithm.logRules())
-                
-                if speed<30:
-                    speed=30
                     
-                self.robot.drive(speed, turnRate)
-                wait(20)
+                self.robot.drive(self.baseSpeed, turnRate)
+                wait(200)
                 
         except KeyboardInterrupt:
             self.robot.stop()
@@ -773,6 +730,7 @@ class MazeSolverController(Controller):
         self.targetForwardDistance  = configuration["TargetForwardDistance"]
         self.baseSpeed              = configuration["BaseSpeed"]
         self.minSpeed               = configuration["MinSpeed"]
+        self.turnRate               = configuration["TurnRate"]
         self.headingThreshold   = configuration["HeadingThreshold"]
         self.centeringThreshold = configuration["CenteringThreshold"]
         self.centeringGain      = configuration["CenteringGain"]
@@ -813,20 +771,20 @@ class MazeSolverController(Controller):
             self.robot.turn(correction)
             wait(20)
             
-    def centerInCorridor(self):
-        leftDist = self.leftSensor.distance()
-        rightDist = self.rightSensor.distance()
+    #def centerInCorridor(self):
+     #   leftDist = self.leftSensor.distance()
+      #  rightDist = self.rightSensor.distance()
         
-        if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.centeringThreshold:
-            correction = (rightDist - leftDist) * self.centeringGain
+       # if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.centeringThreshold:
+        #    correction = (rightDist - leftDist) * self.centeringGain
             
-            if correction > self.correctionClamp:
-                correction = self.correctionClamp
-            elif correction < -self.correctionClamp:
-                correction = -self.correctionClamp
+         #   if correction > self.correctionClamp:
+          #      correction = self.correctionClamp
+           # elif correction < -self.correctionClamp:
+            #    correction = -self.correctionClamp
             
-            self.robot.turn(correction)
-            wait(10)
+            #self.robot.turn(correction)
+            #wait(10)
                 
     def cellDist(self, absDir):
         if absDir%2==0:
@@ -843,7 +801,7 @@ class MazeSolverController(Controller):
             targetAngle = startAngle + degreeTurn
             deadline = self.now() + 5.0
             
-            turnRate=30 if degreeTurn > 0 else -30
+            turnRate=self.turnRate if degreeTurn > 0 else -self.turnRate
             self.robot.drive(0, turnRate)
             
             if degreeTurn > 0:
@@ -892,20 +850,24 @@ class MazeSolverController(Controller):
             self.logger.log(self.step, disturbance, speed)
             
             if self.step % self.logInterval == 0:
-                print("Step "+str(self.step)+" Forward: "+str(forward)+"mm Speed: "+str(speed)+" mm/s")
+                print("Step "+str(self.step)+" Forward: "+str(forward)+" Left: "+str(self.leftSensor.distance())+" Right: "+str(self.rightSensor.distance())+" Speed: "+str(speed)+" mm/s")
                 if isinstance(self.algorithm, FuzzyRuleBased):
                     print(self.algorithm.logRules())
-            wait(10)
+            wait(200)
 
         self.robot.stop()
         
     def executeMove(self, degreeTurn, direction, commit):
+        print("  PRE-TURN  gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
         self.executeTurn(degreeTurn)
-        wait(20)
+        wait(200)
         self.mazeMap.applyTurn(direction)
+        print("  POST-TURN gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
         self.alignHeading()
-        self.centerInCorridor()
+        print("  ALIGNED   gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
+        #.centerInCorridor()
         self.driveCell(direction)
+        print("  POST-DRIVE gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
         commit()
 
     def printHeader(self, algorithm):
@@ -917,6 +879,9 @@ class MazeSolverController(Controller):
     def run(self):
         self.printHeader(self.algorithmLabel())
         self.gyro.reset_angle(0)
+        wait(1000)
+        self.gyro.reset_angle(0)
+        wait(1000)
         self.mazeMap.markVisited()
 
         try:
