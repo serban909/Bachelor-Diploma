@@ -43,12 +43,12 @@ def initializeConfiguration(task, algorithm):
             "CellDistanceNS":          278,
             "CellDistanceEW":          278,
             "OpenPassageThreshold":    90,
-            "ObstacleThreshold":       35,
-            "TargetForwardDistance":   60,
+            "ObstacleThreshold":       50,
+            "TargetForwardDistance":   80,
             "BaseSpeed":               60,
-            "MinSpeed":                20,
+            "MinSpeed":                30,
             "TurnRate":                45,
-            "HeadingThreshold":        5,
+            "HeadingThreshold":        15,
             "CenteringThreshold":      20,
             "CenteringGain":           0.5,
             "CorrectionClamp":         30,
@@ -70,7 +70,7 @@ def initializeConfiguration(task, algorithm):
             }
         elif task == "MazeSolver":
             algorithmConfiguration={
-                "Kp":          0.06,
+                "Kp":          -6.0,
                 "Ki":          0.3,
                 "Kd":          1.0,
                 "MinOutput":   30,
@@ -98,7 +98,7 @@ def initializeConfiguration(task, algorithm):
             }
         elif task == "MazeSolver":
             algorithmConfiguration={
-                "BaseKP":            0.06,
+                "BaseKP":            -6.0,
                 "BaseKI":            0.3,
                 "SmallDisturbance":  10.0,
                 "MediumDisturbance": 20.0,
@@ -154,11 +154,21 @@ def initializeConfiguration(task, algorithm):
                 "MediumOutput":      60.0,
                 "LargeOutput":       90.0,
                 "Rules": [
+                        (0, 0, 6),  # R1:  NL & Z  -> PL
+                        (1, 0, 6),  # R2:  NS & Z  -> PL
+                        (2, 0, 5),  # R3:  ZE & Z  -> PM
+                        (3, 0, 4),  # R4:  PS & Z  -> PS
+                        (4, 0, 4),  # R5:  PL & Z  -> PS
                         (0, 1, 6),  # R1:  NL & Z  -> PL
                         (1, 1, 6),  # R2:  NS & Z  -> PL
                         (2, 1, 5),  # R3:  ZE & Z  -> PM
                         (3, 1, 4),  # R4:  PS & Z  -> PS
                         (4, 1, 4),  # R5:  PL & Z  -> PS
+                        (0, 2, 6),  # R1:  NL & Z  -> PL
+                        (1, 2, 6),  # R2:  NS & Z  -> PL
+                        (2, 2, 5),  # R3:  ZE & Z  -> PM
+                        (3, 2, 4),  # R4:  PS & Z  -> PS
+                        (4, 2, 4),  # R5:  PL & Z  -> PS
                     ],
             }
     else:
