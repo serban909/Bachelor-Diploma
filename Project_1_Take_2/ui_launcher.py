@@ -183,7 +183,7 @@ class GraphWindow(tkinter.Toplevel):
         self.axis.tick_params(colors=COLOUR_SUBTEXT)
         self.axis.spines[:].set_color(COLOUR_BORDER)
         self.axis.set_xlim(0, 100)
-        self.axis.set_ylim(-250, 250)
+        self.axis.set_ylim(-100, 100)
         self.axis.grid(True, alpha=0.2, linestyle="--", color=COLOUR_BORDER)
 
         self.axis.legend(

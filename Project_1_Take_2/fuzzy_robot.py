@@ -7,7 +7,7 @@ from pybricks.tools import wait, StopWatch
 from pybricks.robotics import DriveBase
 import socket
 
-TASK = "MazeSolver"   # "LaneKeeping" / "MazeSolver"
+TASK = "LaneKeeping"   # "LaneKeeping" / "MazeSolver"
 ALGORITHM = "FuzzyRuleBased"  # "PID" / "FuzzyPI" / "FuzzyRuleBased"
 
 def initializeConfiguration(task, algorithm):
@@ -30,7 +30,7 @@ def initializeConfiguration(task, algorithm):
             "RightColorSensor":   Port.S3,
             "BlackThreshold":     6,
             "CrossingThreshold":  7,
-            "BaseSpeed":          20,
+            "BaseSpeed":          40,
             "StopConfirmCount":   1,
             "LogInterval":        1,
         }
@@ -49,9 +49,6 @@ def initializeConfiguration(task, algorithm):
             "MinSpeed":                30,
             "TurnRate":                45,
             "HeadingThreshold":        15,
-            "CenteringThreshold":      20,
-            "CenteringGain":           0.5,
-            "CorrectionClamp":         30,
             "LogInterval":             1,
         }
     else:
@@ -128,21 +125,21 @@ def initializeConfiguration(task, algorithm):
                 # output indices: 0=NL  1=NM  2=NS  3=ZE  4=PS  5=PM  6=PL
                 
                 "Rules": [
-                    (0, 0, 1),  # R1:  NL & N  -> NM
+                    (0, 0, 0),  # R1:  NL & N  -> NL
                     (0, 1, 0),  # R2:  NL & Z  -> NL
-                    (0, 2, 0),  # R3:  NL & P  -> NL
-                    (1, 0, 2),  # R4:  NS & N  -> NS
+                    (0, 2, 1),  # R3:  NL & P  -> NM
+                    (1, 0, 1),  # R4:  NS & N  -> NM
                     (1, 1, 2),  # R5:  NS & Z  -> NS
-                    (1, 2, 1),  # R6:  NS & P  -> NM
+                    (1, 2, 2),  # R6:  NS & P  -> NS
                     (2, 0, 3),  # R7:  ZE & N  -> ZE
                     (2, 1, 3),  # R8:  ZE & Z  -> ZE
                     (2, 2, 3),  # R9:  ZE & P  -> ZE
-                    (3, 0, 4),  # R10: PS & N  -> PS
+                    (3, 0, 5),  # R10: PS & N  -> PM
                     (3, 1, 4),  # R11: PS & Z  -> PS
-                    (3, 2, 5),  # R12: PS & P  -> PM
-                    (4, 0, 5),  # R13: PL & N  -> PM
+                    (3, 2, 4),  # R12: PS & P  -> PS
+                    (4, 0, 6),  # R13: PL & N  -> PL
                     (4, 1, 6),  # R14: PL & Z  -> PL
-                    (4, 2, 6),  # R15: PL & P  -> PL
+                    (4, 2, 5),  # R15: PL & P  -> PM
                 ],
             }
         elif task == "MazeSolver":
@@ -742,9 +739,6 @@ class MazeSolverController(Controller):
         self.minSpeed               = configuration["MinSpeed"]
         self.turnRate               = configuration["TurnRate"]
         self.headingThreshold   = configuration["HeadingThreshold"]
-        self.centeringThreshold = configuration["CenteringThreshold"]
-        self.centeringGain      = configuration["CenteringGain"]
-        self.correctionClamp    = configuration["CorrectionClamp"]
         self.logInterval        = configuration["LogInterval"]
         self.mazeMap            = MazeMap()
 
@@ -780,21 +774,6 @@ class MazeSolverController(Controller):
         if abs(correction) > self.headingThreshold:
             self.robot.turn(correction)
             wait(20)
-            
-    #def centerInCorridor(self):
-     #   leftDist = self.leftSensor.distance()
-      #  rightDist = self.rightSensor.distance()
-        
-       # if leftDist < self.openPassage and rightDist < self.openPassage and abs(leftDist - rightDist) > self.centeringThreshold:
-        #    correction = (rightDist - leftDist) * self.centeringGain
-            
-         #   if correction > self.correctionClamp:
-          #      correction = self.correctionClamp
-           # elif correction < -self.correctionClamp:
-            #    correction = -self.correctionClamp
-            
-            #self.robot.turn(correction)
-            #wait(10)
                 
     def cellDist(self, absDir):
         if absDir%2==0:
@@ -875,7 +854,6 @@ class MazeSolverController(Controller):
         print("  POST-TURN gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
         self.alignHeading()
         print("  ALIGNED   gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
-        #.centerInCorridor()
         self.driveCell(direction)
         print("  POST-DRIVE gyro=" + str(self.gyro.angle()) + " target=" + str(self.mazeMap.gyroTarget()))
         commit()
@@ -889,9 +867,9 @@ class MazeSolverController(Controller):
     def run(self):
         self.printHeader(self.algorithmLabel())
         self.gyro.reset_angle(0)
-        wait(1000)
+        wait(100)
         self.gyro.reset_angle(0)
-        wait(1000)
+        wait(100)
         self.mazeMap.markVisited()
 
         try:
