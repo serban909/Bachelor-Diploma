@@ -103,7 +103,7 @@ python ui_launcher.py
 - Select Task (`LaneKeeping` or `MazeSolver`)
 - Select Algorithm (`PID`, `FuzzyPI`, or `FuzzyRuleBased`)
 - Set EV3 host (default: `ev3dev.local`)
-- (Optional) enable live maze map for maze mode
+- (Optional) enable on the fly maze map for maze mode
 - Press **Start Robot**
 
 ### 3.2. EV3 Side (Deployment and Execution)
@@ -124,7 +124,7 @@ brickrun -r -- pybricks-micropython /home/robot/fuzzy_robot.py
 - Launcher displays live plots:
   - Disturbance
   - Controller output (turn rate or speed)
-- In Maze mode, optional live maze-map visualization is available.
+- In Maze mode, optional on the fly maze-map visualization is available.
 
 ---
 
@@ -135,7 +135,7 @@ brickrun -r -- pybricks-micropython /home/robot/fuzzy_robot.py
 - Compiled binaries are not committed.
 - `ui_launcher.py` starts successfully on PC.
 - EV3 connection works (`ssh`/`scp`).
-- Telemetry is received and plotted in real time.
+- Telemetry is received and plotted in on the fly.
 
 ---
 
